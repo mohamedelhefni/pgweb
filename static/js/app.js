@@ -6,6 +6,7 @@ var bookmarks           = {};
 var default_rows_limit  = 100;
 var currentObject       = null;
 var autocompleteObjects = [];
+var finderObjects       = [];
 var inputResizing       = false;
 var inputResizeOffset   = null;
 var queryTabs           = [];
@@ -268,6 +269,7 @@ function loadSchemas() {
 
       // Clear out all autocomplete objects
       autocompleteObjects = [];
+      finderObjects = [];
       for (schema in data) {
         for (kind in data[schema]) {
           if (!(kind == "table" || kind == "view" || kind == "materialized_view" || kind == "function")) {
@@ -275,10 +277,17 @@ function loadSchemas() {
           }
 
           for (item in data[schema][kind]) {
+            var obj = data[schema][kind][item];
             autocompleteObjects.push({
-              caption: data[schema][kind][item].name,
-              value: data[schema][kind][item].name,
+              caption: obj.name,
+              value: obj.name,
               meta: kind
+            });
+            finderObjects.push({
+              name:   obj.name,
+              schema: schema,
+              type:   kind,
+              id:     kind == "function" ? String(obj.oid) : schema + "." + obj.name
             });
           }
         }
@@ -1494,6 +1503,171 @@ function bindCurrentDatabaseMenu() {
   });
 }
 
+function initFinder() {
+  var finderActiveIdx = -1;
+  var finderFiltered  = [];
+
+  var typeIcons = {
+    "table":             "fa-table",
+    "view":              "fa-table",
+    "materialized_view": "fa-table",
+    "function":          "fa-bolt"
+  };
+
+  var typeLabels = {
+    "table":             "table",
+    "view":              "view",
+    "materialized_view": "mat. view",
+    "function":          "function"
+  };
+
+  function highlightMatch(text, query) {
+    if (!query) return escapeHtml(text);
+    var escaped = escapeHtml(text);
+    var escapedQ = escapeHtml(query).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    return escaped.replace(new RegExp("(" + escapedQ + ")", "gi"), "<em>$1</em>");
+  }
+
+  function renderResults(query) {
+    var q = (query || "").toLowerCase().trim();
+    if (!q) {
+      finderFiltered = finderObjects.slice(0, 100);
+    } else {
+      finderFiltered = finderObjects.filter(function(o) {
+        return o.name.toLowerCase().indexOf(q) !== -1 ||
+               o.schema.toLowerCase().indexOf(q) !== -1;
+      }).slice(0, 100);
+    }
+
+    var list = $("#finder_results");
+    list.empty();
+    finderActiveIdx = finderFiltered.length > 0 ? 0 : -1;
+
+    if (finderFiltered.length === 0) {
+      list.append("<li class='finder-empty'>No results</li>");
+      return;
+    }
+
+    finderFiltered.forEach(function(obj, i) {
+      var icon = typeIcons[obj.type] || "fa-table";
+      var label = typeLabels[obj.type] || obj.type;
+      var li = $("<li>")
+        .attr("data-idx", i)
+        .append("<span class='finder-item-icon'><i class='fa " + icon + "'></i></span>")
+        .append("<span class='finder-item-name'>" + highlightMatch(obj.name, query) + "</span>")
+        .append("<span class='finder-item-schema'>" + escapeHtml(obj.schema) + "</span>")
+        .append("<span class='finder-item-meta'>" + label + "</span>");
+      list.append(li);
+    });
+
+    updateActive();
+  }
+
+  function updateActive() {
+    $("#finder_results li").removeClass("finder-active");
+    if (finderActiveIdx >= 0) {
+      var active = $("#finder_results li[data-idx=" + finderActiveIdx + "]");
+      active.addClass("finder-active");
+      active[0] && active[0].scrollIntoView({ block: "nearest" });
+    }
+  }
+
+  function selectItem(idx) {
+    if (idx < 0 || idx >= finderFiltered.length) return;
+    var obj = finderFiltered[idx];
+    closeFinder();
+
+    currentObject = { name: obj.id, type: obj.type };
+
+    var sidebarItem = $("#objects li.schema-item[data-id='" + obj.id + "']");
+    if (sidebarItem.length) {
+      $("#objects li").removeClass("active");
+      sidebarItem.addClass("active");
+      // Expand parent schema and group if collapsed
+      sidebarItem.closest(".schema").addClass("expanded");
+      sidebarItem.closest(".schema-group").addClass("expanded");
+    }
+
+    $(".current-page").data("page", 1);
+    $(".filters select, .filters input").val("");
+
+    if (obj.type == "function") {
+      sessionStorage.setItem("tab", "table_structure");
+      showTableStructure();
+    } else {
+      showTableInfo();
+      switch (sessionStorage.getItem("tab")) {
+        case "table_content":    showTableContent();    break;
+        case "table_structure":  showTableStructure();  break;
+        case "table_constraints":showTableConstraints();break;
+        case "table_indexes":    showTableIndexes();    break;
+        default:                 showTableContent();
+      }
+    }
+  }
+
+  function openFinder() {
+    if (!connected) return;
+    $("#finder_overlay").show();
+    $("#finder_modal").show();
+    $("#finder_input").val("").focus();
+    renderResults("");
+  }
+
+  function closeFinder() {
+    $("#finder_overlay").hide();
+    $("#finder_modal").hide();
+    finderActiveIdx = -1;
+    finderFiltered = [];
+  }
+
+  // Keyboard shortcut: Cmd+P / Ctrl+P
+  $(document).on("keydown", function(e) {
+    if ((e.metaKey || e.ctrlKey) && e.key === "p") {
+      e.preventDefault();
+      if ($("#finder_modal").is(":visible")) {
+        closeFinder();
+      } else {
+        openFinder();
+      }
+      return;
+    }
+
+    if (!$("#finder_modal").is(":visible")) return;
+
+    if (e.key === "Escape") {
+      e.preventDefault();
+      closeFinder();
+    } else if (e.key === "ArrowDown") {
+      e.preventDefault();
+      finderActiveIdx = Math.min(finderActiveIdx + 1, finderFiltered.length - 1);
+      updateActive();
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      finderActiveIdx = Math.max(finderActiveIdx - 1, 0);
+      updateActive();
+    } else if (e.key === "Enter") {
+      e.preventDefault();
+      selectItem(finderActiveIdx);
+    }
+  });
+
+  $("#finder_input").on("input", function() {
+    renderResults($(this).val());
+  });
+
+  $("#finder_results").on("click", "li[data-idx]", function() {
+    selectItem(parseInt($(this).attr("data-idx"), 10));
+  });
+
+  $("#finder_results").on("mousemove", "li[data-idx]", function() {
+    finderActiveIdx = parseInt($(this).attr("data-idx"), 10);
+    updateActive();
+  });
+
+  $("#finder_overlay").on("click", closeFinder);
+}
+
 function bindDatabaseObjectsFilter() {
   var filterTimeout = null;
 
@@ -2164,6 +2338,7 @@ $(document).ready(function() {
   initQueryTabs();
   addShortcutTooltips();
   bindDatabaseObjectsFilter();
+  initFinder();
 
   // Set session from the url
   var reqUrl = new URL(window.location);

@@ -183,6 +183,20 @@
     <textarea class="content content-edit" style="display:none"></textarea>
   </div>
 
+  <div id="finder_overlay"></div>
+  <div id="finder_modal">
+    <div id="finder_input_wrap">
+      <i class="fa fa-search finder-search-icon"></i>
+      <input id="finder_input" type="text" autocomplete="off" spellcheck="false" placeholder="Search tables, views, functions...">
+    </div>
+    <ul id="finder_results"></ul>
+    <div id="finder_footer">
+      <span><kbd>↑</kbd><kbd>↓</kbd> navigate</span>
+      <span><kbd>↵</kbd> open</span>
+      <span><kbd>esc</kbd> close</span>
+    </div>
+  </div>
+
   <div id="connection_window">
     <div class="connection-settings">
       <div class="header">
