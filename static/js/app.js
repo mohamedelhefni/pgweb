@@ -303,6 +303,28 @@ function unescapeHtml(str){
   return e.childNodes.length === 0 ? "" : e.childNodes[0].nodeValue;
 }
 
+function tryParseJSON(str) {
+  if (typeof str !== "string") return null;
+  var s = str.trim();
+  if (s.length === 0 || (s[0] !== "{" && s[0] !== "[")) return null;
+  try {
+    var parsed = JSON.parse(s);
+    if (typeof parsed === "object" && parsed !== null) return parsed;
+  } catch(e) {}
+  return null;
+}
+
+function setModalContent(value) {
+  var pre = $("#content_modal pre.content");
+  var parsed = tryParseJSON(value);
+  if (parsed !== null) {
+    var pretty = JSON.stringify(parsed, null, 2);
+    pre.html("<code class='json-content'>" + escapeHtml(pretty) + "</code>");
+  } else {
+    pre.text(value);
+  }
+}
+
 function escapeAttr(str) {
   return String(str).replace(/&/g, "&amp;").replace(/'/g, "&#39;").replace(/"/g, "&quot;");
 }
@@ -1428,7 +1450,7 @@ function bindTableHeaderMenu() {
       switch(menuItem.data("action")) {
         case "display_value":
           var value = $(context).text();
-          $("#content_modal .content").text(value);
+          setModalContent(value);
           $("#content_modal").show();
           break;
         case "copy_value":
@@ -1758,7 +1780,7 @@ function bindContentModalEvents() {
     currentCell = (mode === "browse" && ctid && table) ? { table: table, colName: colName, ctid: ctid } : null;
 
     resetModalToViewMode();
-    $("#content_modal pre").html(value);
+    setModalContent(value);
     $(".content-modal-action[data-action='edit']").toggle(!!currentCell);
     $("#content_modal").show();
   })
