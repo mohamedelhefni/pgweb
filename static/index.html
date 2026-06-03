@@ -49,6 +49,7 @@
             src="static/js/keybinding-vim.js"
         ></script>
         <script type="text/javascript" src="static/js/base64.js"></script>
+        <script type="text/javascript" src="static/js/mode-json.js"></script>
     </head>
     <body>
         <div id="main">
@@ -347,11 +348,8 @@
                     </button>
                 </div>
             </div>
-            <pre class="content"></pre>
-            <textarea
-                class="content content-edit"
-                style="display: none"
-            ></textarea>
+            <div id="content_modal_ace_view" class="content"></div>
+            <div id="content_modal_ace_edit" class="content content-edit" style="display: none"></div>
         </div>
 
         <div id="finder_overlay"></div>
@@ -779,9 +777,9 @@
                 var LIGHT_THEME = "ace/theme/tomorrow";
 
                 function applyAceTheme(theme) {
-                    if (window.editor) {
-                        window.editor.setTheme(theme);
-                    }
+                    if (window.editor) window.editor.setTheme(theme);
+                    if (window.contentViewEditor) window.contentViewEditor.setTheme(theme);
+                    if (window.contentEditEditor) window.contentEditEditor.setTheme(theme);
                 }
 
                 function applyTheme(theme) {

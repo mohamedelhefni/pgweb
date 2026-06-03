@@ -1256,25 +1256,13 @@ a:hover {
 }
 
 #content_modal .content {
-  border: none;
-  padding: 12px 14px;
-  white-space: break-spaces;
-  background: var(--bg-elevated);
-  color: var(--text);
-  font-family: var(--font-mono);
-  font-size: 12px;
-  line-height: 1.6;
-  overflow-y: auto;
   height: calc(380px - 36px);
   box-sizing: border-box;
   margin: 0;
+  position: relative;
 }
 
-#content_modal textarea.content-edit {
-  resize: none;
-  width: 100%;
-  outline: none;
-  border: none;
+#content_modal .content-edit {
   border-top: 1px solid var(--border);
 }
 
