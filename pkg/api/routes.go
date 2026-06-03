@@ -3,8 +3,8 @@ package api
 import (
 	"github.com/gin-gonic/gin"
 
-	"github.com/sosedoff/pgweb/pkg/command"
-	"github.com/sosedoff/pgweb/pkg/metrics"
+	"github.com/mohamedelhefni/pgport/pkg/command"
+	"github.com/mohamedelhefni/pgport/pkg/metrics"
 )
 
 func SetupMiddlewares(group *gin.RouterGroup) {

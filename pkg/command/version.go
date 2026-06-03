@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	// Version is the current Pgweb application version
+	// Version is the current pgport application version
 	Version = "1.0"
 )
 
@@ -45,7 +45,7 @@ func init() {
 }
 
 func VersionString() string {
-	chunks := []string{fmt.Sprintf("Pgweb v%s", Version)}
+	chunks := []string{fmt.Sprintf("pgport v%s", Version)}
 
 	if GitCommit != "" {
 		chunks = append(chunks, fmt.Sprintf("(git: %s)", GitCommit))

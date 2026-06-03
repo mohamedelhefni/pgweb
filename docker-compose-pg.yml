@@ -1,11 +1,11 @@
 ---
 x-base: &base
   environment: &env
-    POSTGRES_DB: pgweb
-    POSTGRES_PASSWORD: pgweb
-    POSTGRES_USER: pgweb
+    POSTGRES_DB: pgport
+    POSTGRES_PASSWORD: pgport
+    POSTGRES_USER: pgport
   healthcheck:
-    test: pg_isready -U pgweb -h 127.0.0.1
+    test: pg_isready -U pgport -h 127.0.0.1
     interval: 5s
 
 services:

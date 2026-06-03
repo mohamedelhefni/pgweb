@@ -10,7 +10,7 @@ for target in $TARGETS; do
   os=${parts[0]}
   arch=${parts[1]}
 
-  GOOS=$os GOARCH=$arch go build -ldflags "$LDFLAGS" -o "./bin/pgweb_${os}_${arch}"
+  GOOS=$os GOARCH=$arch go build -ldflags "$LDFLAGS" -o "./bin/pgport_${os}_${arch}"
 done
 
 for target in $ARM_TARGETS; do
@@ -20,5 +20,5 @@ for target in $ARM_TARGETS; do
   arch=${parts[0]}
   arm=$(echo ${parts[1]} | sed s/v//g)
 
-  GOOS=linux GOARCH=$arch GOARM=$arm go build -ldflags "$LDFLAGS" -o "./bin/pgweb_linux_${arch}_v${arm}"
+  GOOS=linux GOARCH=$arch GOARM=$arm go build -ldflags "$LDFLAGS" -o "./bin/pgport_linux_${arch}_v${arm}"
 done

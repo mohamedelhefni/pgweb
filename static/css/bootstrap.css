@@ -1,5 +1,5 @@
 /*
- * Minimal Bootstrap 3 shim — modern CSS replacement for pgweb.
+ * Minimal Bootstrap 3 shim — modern CSS replacement for pgport.
  * Provides only the classes the app actually uses.
  * All colors are driven by CSS custom properties defined in app.css.
  */
@@ -9,132 +9,155 @@
    ================================================================ */
 
 .row {
-  display: flex;
-  flex-wrap: wrap;
-  margin: 0 -8px;
+    display: flex;
+    flex-wrap: wrap;
+    margin: 0 -8px;
 }
 
 .row > [class*="col-"] {
-  padding: 0 8px;
-  box-sizing: border-box;
+    padding: 0 8px;
+    box-sizing: border-box;
 }
 
-.col-sm-2  { width: 16.6667%; }
-.col-sm-3  { width: 25%; }
-.col-sm-4  { width: 33.3333%; }
-.col-sm-5  { width: 41.6667%; }
-.col-sm-7  { width: 58.3333%; }
-.col-sm-9  { width: 75%; }
-.col-sm-12 { width: 100%; }
-.col-xs-3  { width: 25%; }
-.col-xs-9  { width: 75%; }
+.col-sm-2 {
+    width: 16.6667%;
+}
+.col-sm-3 {
+    width: 25%;
+}
+.col-sm-4 {
+    width: 33.3333%;
+}
+.col-sm-5 {
+    width: 41.6667%;
+}
+.col-sm-7 {
+    width: 58.3333%;
+}
+.col-sm-9 {
+    width: 75%;
+}
+.col-sm-12 {
+    width: 100%;
+}
+.col-xs-3 {
+    width: 25%;
+}
+.col-xs-9 {
+    width: 75%;
+}
 
-.no-left-padding { padding-left: 0 !important; }
+.no-left-padding {
+    padding-left: 0 !important;
+}
 
 /* ================================================================
    BUTTONS
    ================================================================ */
 
 .btn {
-  display: inline-block;
-  padding: 5px 11px;
-  font-size: 12px;
-  font-family: inherit;
-  font-weight: 500;
-  line-height: 1.45;
-  cursor: pointer;
-  border: 1px solid transparent;
-  border-radius: 4px;
-  white-space: nowrap;
-  text-decoration: none;
-  background: transparent;
-  outline: none;
-  user-select: none;
-  -webkit-appearance: none;
-  transition: background 120ms ease-out, border-color 120ms ease-out, color 120ms ease-out;
+    display: inline-block;
+    padding: 5px 11px;
+    font-size: 12px;
+    font-family: inherit;
+    font-weight: 500;
+    line-height: 1.45;
+    cursor: pointer;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    white-space: nowrap;
+    text-decoration: none;
+    background: transparent;
+    outline: none;
+    user-select: none;
+    -webkit-appearance: none;
+    transition:
+        background 120ms ease-out,
+        border-color 120ms ease-out,
+        color 120ms ease-out;
 }
 
 .btn:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
 }
 
 .btn-sm,
 .btn-group-sm > .btn {
-  padding: 3px 8px;
-  font-size: 11.5px;
+    padding: 3px 8px;
+    font-size: 11.5px;
 }
 
 .btn-xs {
-  padding: 1px 6px;
-  font-size: 11px;
-  border-radius: 3px;
+    padding: 1px 6px;
+    font-size: 11px;
+    border-radius: 3px;
 }
 
 .btn-block {
-  display: block;
-  width: 100%;
-  text-align: center;
+    display: block;
+    width: 100%;
+    text-align: center;
 }
 
 .btn-block + .btn-block {
-  margin-top: 6px;
+    margin-top: 6px;
 }
 
 .btn:disabled,
 .btn[disabled] {
-  opacity: 0.4;
-  cursor: not-allowed;
-  pointer-events: none;
+    opacity: 0.4;
+    cursor: not-allowed;
+    pointer-events: none;
 }
 
 /* Primary */
 .btn-primary {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: var(--accent-text);
+    background: var(--accent);
+    border-color: var(--accent);
+    color: var(--accent-text);
 }
 
 .btn-primary:hover {
-  background: var(--accent-hover);
-  border-color: var(--accent-hover);
-  color: var(--accent-text);
-  text-decoration: none;
+    background: var(--accent-hover);
+    border-color: var(--accent-hover);
+    color: var(--accent-text);
+    text-decoration: none;
 }
 
 /* Default */
 .btn-default {
-  background: transparent;
-  border-color: var(--border);
-  color: var(--text-2);
+    background: transparent;
+    border-color: var(--border);
+    color: var(--text-2);
 }
 
 .btn-default:hover {
-  border-color: var(--text-muted);
-  color: var(--text);
-  text-decoration: none;
-  background: var(--bg-row-hover);
+    border-color: var(--text-muted);
+    color: var(--text);
+    text-decoration: none;
+    background: var(--bg-row-hover);
 }
 
 /* Danger */
 .btn-danger {
-  background: transparent;
-  border-color: var(--error);
-  color: var(--error);
+    background: transparent;
+    border-color: var(--error);
+    color: var(--error);
 }
 
 .btn-danger:hover {
-  background: var(--error);
-  color: var(--accent-text);
-  text-decoration: none;
+    background: var(--error);
+    color: var(--accent-text);
+    text-decoration: none;
 }
 
 /* Active state (used in btn-group for connection type switcher) */
 .btn.active,
 .btn-group > .btn.active {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: var(--accent-text);
+    background: var(--accent);
+    border-color: var(--accent);
+    color: var(--accent-text);
 }
 
 /* ================================================================
@@ -142,31 +165,31 @@
    ================================================================ */
 
 .btn-group {
-  display: inline-flex;
-  position: relative;
-  vertical-align: middle;
+    display: inline-flex;
+    position: relative;
+    vertical-align: middle;
 }
 
 .btn-group > .btn {
-  border-radius: 0;
+    border-radius: 0;
 }
 
 .btn-group > .btn:first-child {
-  /* border-radius: 4px 0 0 4px; */
+    /* border-radius: 4px 0 0 4px; */
 }
 
 .btn-group > .btn:last-child {
-  /* border-radius: 0 4px 4px 0; */
-  border-right-width: 1px;
+    /* border-radius: 0 4px 4px 0; */
+    border-right-width: 1px;
 }
 
 .btn-group > .btn:only-child {
-  border-radius: 4px;
-  border-right-width: 1px;
+    border-radius: 4px;
+    border-right-width: 1px;
 }
 
 .btn-group.open .dropdown-toggle {
-  background: var(--bg-row-hover);
+    background: var(--bg-row-hover);
 }
 
 /* ================================================================
@@ -174,14 +197,14 @@
    ================================================================ */
 
 .caret {
-  display: inline-block;
-  width: 0;
-  height: 0;
-  margin-left: 4px;
-  vertical-align: middle;
-  border-top: 4px dashed;
-  border-right: 4px solid transparent;
-  border-left: 4px solid transparent;
+    display: inline-block;
+    width: 0;
+    height: 0;
+    margin-left: 4px;
+    vertical-align: middle;
+    border-top: 4px dashed;
+    border-right: 4px solid transparent;
+    border-left: 4px solid transparent;
 }
 
 /* ================================================================
@@ -189,49 +212,51 @@
    ================================================================ */
 
 .dropdown-menu {
-  display: none;
-  position: absolute;
-  top: 100%;
-  left: 0;
-  z-index: 1000;
-  min-width: 160px;
-  padding: 4px 0;
-  margin: 3px 0 0;
-  background: var(--bg-elevated);
-  border: 1px solid var(--border);
-  border-radius: 5px;
-  box-shadow: 0 4px 20px var(--shadow);
-  list-style: none;
-  font-size: 12px;
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    z-index: 1000;
+    min-width: 160px;
+    padding: 4px 0;
+    margin: 3px 0 0;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    box-shadow: 0 4px 20px var(--shadow);
+    list-style: none;
+    font-size: 12px;
 }
 
 .dropdown-menu > li > a {
-  display: block;
-  padding: 6px 14px;
-  color: var(--text-2);
-  text-decoration: none;
-  white-space: nowrap;
-  clear: both;
-  font-weight: normal;
-  transition: background 80ms ease-out, color 80ms ease-out;
+    display: block;
+    padding: 6px 14px;
+    color: var(--text-2);
+    text-decoration: none;
+    white-space: nowrap;
+    clear: both;
+    font-weight: normal;
+    transition:
+        background 80ms ease-out,
+        color 80ms ease-out;
 }
 
 .dropdown-menu > li > a:hover,
 .dropdown-menu > li.active > a {
-  background: var(--bg-row-hover);
-  color: var(--text);
-  text-decoration: none;
+    background: var(--bg-row-hover);
+    color: var(--text);
+    text-decoration: none;
 }
 
 .dropdown-menu > .divider {
-  height: 1px;
-  margin: 4px 0;
-  overflow: hidden;
-  background: var(--border-subtle);
+    height: 1px;
+    margin: 4px 0;
+    overflow: hidden;
+    background: var(--border-subtle);
 }
 
 .open > .dropdown-menu {
-  display: block;
+    display: block;
 }
 
 /* ================================================================
@@ -239,72 +264,74 @@
    ================================================================ */
 
 .form-horizontal .form-group {
-  display: flex;
-  align-items: flex-start;
-  margin-bottom: 14px;
+    display: flex;
+    align-items: flex-start;
+    margin-bottom: 14px;
 }
 
 .form-group {
-  margin-bottom: 14px;
+    margin-bottom: 14px;
 }
 
 .control-label {
-  display: flex;
-  align-items: center;
-  min-height: 32px;
-  font-size: 12px;
-  color: var(--text-2);
-  font-weight: 500;
+    display: flex;
+    align-items: center;
+    min-height: 32px;
+    font-size: 12px;
+    color: var(--text-2);
+    font-weight: 500;
 }
 
 .form-control {
-  display: block;
-  width: 100%;
-  height: 32px;
-  padding: 5px 9px;
-  font-size: 12px;
-  font-family: inherit;
-  color: var(--text);
-  background: var(--bg-input);
-  border: 1px solid var(--border);
-  border-radius: 4px;
-  outline: none;
-  box-sizing: border-box;
-  transition: border-color 120ms ease-out, box-shadow 120ms ease-out;
-  -webkit-appearance: none;
+    display: block;
+    width: 100%;
+    height: 32px;
+    padding: 5px 9px;
+    font-size: 12px;
+    font-family: inherit;
+    color: var(--text);
+    background: var(--bg-input);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    outline: none;
+    box-sizing: border-box;
+    transition:
+        border-color 120ms ease-out,
+        box-shadow 120ms ease-out;
+    -webkit-appearance: none;
 }
 
 .form-control:focus {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 2px var(--accent-dim);
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px var(--accent-dim);
 }
 
 .form-control:disabled,
 .form-control[disabled] {
-  opacity: 0.5;
-  cursor: not-allowed;
+    opacity: 0.5;
+    cursor: not-allowed;
 }
 
 select.form-control {
-  appearance: none;
-  -webkit-appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23888'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 9px center;
-  padding-right: 26px;
-  cursor: pointer;
+    appearance: none;
+    -webkit-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23888'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 9px center;
+    padding-right: 26px;
+    cursor: pointer;
 }
 
 .help-block {
-  display: block;
-  font-size: 11px;
-  color: var(--text-muted);
-  margin-top: 5px;
-  line-height: 1.5;
+    display: block;
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-top: 5px;
+    line-height: 1.5;
 }
 
 .help-block a {
-  color: var(--accent);
+    color: var(--accent);
 }
 
 /* ================================================================
@@ -312,30 +339,36 @@ select.form-control {
    ================================================================ */
 
 .alert {
-  padding: 10px 13px;
-  border-radius: 4px;
-  font-size: 12px;
-  border: 1px solid transparent;
-  margin-bottom: 14px;
-  line-height: 1.5;
+    padding: 10px 13px;
+    border-radius: 4px;
+    font-size: 12px;
+    border: 1px solid transparent;
+    margin-bottom: 14px;
+    line-height: 1.5;
 }
 
 .alert-danger {
-  background: var(--alert-error-bg);
-  border-color: var(--alert-error-border);
-  color: var(--error);
+    background: var(--alert-error-bg);
+    border-color: var(--alert-error-border);
+    color: var(--error);
 }
 
 .alert-warning {
-  background: var(--alert-warn-bg);
-  border-color: var(--alert-warn-border);
-  color: var(--warning);
+    background: var(--alert-warn-bg);
+    border-color: var(--alert-warn-border);
+    color: var(--warning);
 }
 
 /* ================================================================
    UTILITIES
    ================================================================ */
 
-.text-center { text-align: center; }
-.pull-right  { float: right; }
-.left        { float: left; }
+.text-center {
+    text-align: center;
+}
+.pull-right {
+    float: right;
+}
+.left {
+    float: left;
+}

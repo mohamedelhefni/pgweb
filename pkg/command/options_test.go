@@ -29,7 +29,7 @@ func TestParseOptions(t *testing.T) {
 		assert.Equal(t, false, opts.Cors)
 		assert.Equal(t, "*", opts.CorsOrigin)
 		assert.Equal(t, "", opts.Passfile)
-		assert.Equal(t, filepath.Join(hdir, ".pgweb/bookmarks"), opts.BookmarksDir)
+		assert.Equal(t, filepath.Join(hdir, ".pgport/bookmarks"), opts.BookmarksDir)
 	})
 
 	t.Run("sessions", func(t *testing.T) {
@@ -39,13 +39,13 @@ func TestParseOptions(t *testing.T) {
 	})
 
 	t.Run("url prefix", func(t *testing.T) {
-		opts, err := ParseOptions([]string{"--prefix", "pgweb"})
+		opts, err := ParseOptions([]string{"--prefix", "pgport"})
 		assert.NoError(t, err)
-		assert.Equal(t, "pgweb/", opts.Prefix)
+		assert.Equal(t, "pgport/", opts.Prefix)
 
-		opts, err = ParseOptions([]string{"--prefix", "pgweb/"})
+		opts, err = ParseOptions([]string{"--prefix", "pgport/"})
 		assert.NoError(t, err)
-		assert.Equal(t, "pgweb/", opts.Prefix)
+		assert.Equal(t, "pgport/", opts.Prefix)
 	})
 
 	t.Run("connect backend", func(t *testing.T) {
@@ -82,8 +82,8 @@ func TestParseOptions(t *testing.T) {
 	})
 
 	t.Run("bookmarks dir from env var", func(t *testing.T) {
-		os.Setenv("PGWEB_BOOKMARKS_DIR", "/tmp/my-bookmarks")
-		defer os.Unsetenv("PGWEB_BOOKMARKS_DIR")
+		os.Setenv("pgport_BOOKMARKS_DIR", "/tmp/my-bookmarks")
+		defer os.Unsetenv("pgport_BOOKMARKS_DIR")
 
 		opts, err := ParseOptions([]string{})
 		assert.NoError(t, err)
@@ -91,8 +91,8 @@ func TestParseOptions(t *testing.T) {
 	})
 
 	t.Run("bookmarks dir flag takes precedence over env var", func(t *testing.T) {
-		os.Setenv("PGWEB_BOOKMARKS_DIR", "/tmp/my-bookmarks")
-		defer os.Unsetenv("PGWEB_BOOKMARKS_DIR")
+		os.Setenv("pgport_BOOKMARKS_DIR", "/tmp/my-bookmarks")
+		defer os.Unsetenv("pgport_BOOKMARKS_DIR")
 
 		flagDir := t.TempDir()
 

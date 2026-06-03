@@ -14,14 +14,14 @@ import (
 	"github.com/jessevdk/go-flags"
 	"github.com/sirupsen/logrus"
 
-	"github.com/sosedoff/pgweb/pkg/api"
-	"github.com/sosedoff/pgweb/pkg/bookmarks"
-	"github.com/sosedoff/pgweb/pkg/client"
-	"github.com/sosedoff/pgweb/pkg/command"
-	"github.com/sosedoff/pgweb/pkg/connection"
-	"github.com/sosedoff/pgweb/pkg/metrics"
-	"github.com/sosedoff/pgweb/pkg/queries"
-	"github.com/sosedoff/pgweb/pkg/util"
+	"github.com/mohamedelhefni/pgport/pkg/api"
+	"github.com/mohamedelhefni/pgport/pkg/bookmarks"
+	"github.com/mohamedelhefni/pgport/pkg/client"
+	"github.com/mohamedelhefni/pgport/pkg/command"
+	"github.com/mohamedelhefni/pgport/pkg/connection"
+	"github.com/mohamedelhefni/pgport/pkg/metrics"
+	"github.com/mohamedelhefni/pgport/pkg/queries"
+	"github.com/mohamedelhefni/pgport/pkg/util"
 )
 
 var (
@@ -30,7 +30,7 @@ var (
 
 	readonlyWarning = `
 --------------------------------------------------------------------------------
-SECURITY WARNING: You are running Pgweb in read-only mode.
+SECURITY WARNING: You are running pgport in read-only mode.
 This mode is designed for environments where users could potentially delete or change data.
 For proper read-only access please follow PostgreSQL role management documentation.
 --------------------------------------------------------------------------------`
@@ -257,7 +257,7 @@ func openPage() {
 
 	_, err = exec.Command("open", url).Output()
 	if err != nil {
-		fmt.Println("Unable to auto-open pgweb URL:", err)
+		fmt.Println("Unable to auto-open pgport URL:", err)
 	}
 }
 

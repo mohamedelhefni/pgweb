@@ -9,7 +9,7 @@ import (
 )
 
 var (
-	reMetaPrefix  = regexp.MustCompile(`(?m)^\s*--\s*pgweb:\s*(.+)`)
+	reMetaPrefix  = regexp.MustCompile(`(?m)^\s*--\s*pgport:\s*(.+)`)
 	reMetaContent = regexp.MustCompile(`([\w]+)\s*=\s*"([^"]+)"`)
 	reMatchAll    = regexp.MustCompile(`^(.+)$`)
 	reExpression  = regexp.MustCompile(`[\[\]\(\)\+\*]+`)

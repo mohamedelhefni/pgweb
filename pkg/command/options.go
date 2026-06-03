@@ -15,8 +15,8 @@ import (
 )
 
 const (
-	// Prefix to use for all pgweb env vars, ie PGWEB_HOST, PGWEB_PORT, etc
-	envVarPrefix = "PGWEB_"
+	// Prefix to use for all pgport env vars, ie pgport_HOST, pgport_PORT, etc
+	envVarPrefix = "pgport_"
 )
 
 type Options struct {
@@ -48,7 +48,7 @@ type Options struct {
 	Prefix                       string `long:"prefix" description:"Add a url prefix"`
 	ReadOnly                     bool   `long:"readonly" description:"Run database connection in readonly mode"`
 	LockSession                  bool   `long:"lock-session" description:"Lock session to a single database connection"`
-	Bookmark                     string `short:"b" long:"bookmark" description:"Bookmark to use for connection. Bookmark files are stored under $HOME/.pgweb/bookmarks/*.toml" default:""`
+	Bookmark                     string `short:"b" long:"bookmark" description:"Bookmark to use for connection. Bookmark files are stored under $HOME/.pgport/bookmarks/*.toml" default:""`
 	BookmarksDir                 string `long:"bookmarks-dir" description:"Overrides default directory for bookmark files to search" default:""`
 	BookmarksOnly                bool   `long:"bookmarks-only" description:"Allow only connections from bookmarks"`
 	QueriesDir                   string `long:"queries-dir" description:"Overrides default directory for local queries"`
@@ -109,8 +109,8 @@ func ParseOptions(args []string) (Options, error) {
 		}
 	}
 
-	// Handle edge case where pgweb is started with a default host `localhost` and no user.
-	// When user is not set the `lib/pq` connection will fail and cause pgweb's termination.
+	// Handle edge case where pgport is started with a default host `localhost` and no user.
+	// When user is not set the `lib/pq` connection will fail and cause pgport's termination.
 	if (opts.Host == "localhost" || opts.Host == "127.0.0.1") && opts.User == "" {
 		if username := getCurrentUser(); username != "" {
 			opts.User = username
@@ -191,11 +191,11 @@ func ParseOptions(args []string) (Options, error) {
 
 	if homePath != "" {
 		if opts.BookmarksDir == "" {
-			opts.BookmarksDir = filepath.Join(homePath, ".pgweb/bookmarks")
+			opts.BookmarksDir = filepath.Join(homePath, ".pgport/bookmarks")
 		}
 
 		if opts.QueriesDir == "" {
-			opts.QueriesDir = filepath.Join(homePath, ".pgweb/queries")
+			opts.QueriesDir = filepath.Join(homePath, ".pgport/queries")
 		}
 	}
 
@@ -227,7 +227,7 @@ func getPrefixedEnvVar(name string) string {
 	if val == "" {
 		val = os.Getenv(name)
 		if val != "" {
-			fmt.Printf("[DEPRECATION] Usage of %s env var is deprecated, please use PGWEB_%s variable instead\n", name, name)
+			fmt.Printf("[DEPRECATION] Usage of %s env var is deprecated, please use pgport_%s variable instead\n", name, name)
 		}
 	}
 	return val

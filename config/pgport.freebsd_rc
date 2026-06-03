@@ -1,0 +1,50 @@
+#!/bin/sh
+#
+# $FreeBSD: $
+#
+# PROVIDE: pgport
+# REQUIRE: NETWORKING
+# KEYWORD:
+#
+# Add the following lines to /etc/rc.conf to enable pgport:
+# pgport_enable="YES"
+#
+# pgport_enable (bool):              Set to YES to enable pgport
+#                                       Default: NO
+# pgport_bind (str):               HTTP server host
+#                                       Default: localhost
+# pgport_listen (str):   HTTP server listen port
+#                                       Default: 8081
+# pgport_user (str):         pgport daemon user
+#                                       Default: www
+# pgport_group (str):                pgport daemon group
+#                                       Default: www
+
+. /etc/rc.subr
+
+name="pgport"
+rcvar="pgport_enable"
+load_rc_config $name
+
+: ${pgport_user:="www"}
+: ${pgport_group:="www"}
+: ${pgport_enable:="NO"}
+: ${pgport_bind:="localhost"}
+: ${pgport_flags=""}
+: ${pgport_facility:="daemon"}
+: ${pgport_priority:="debug"}
+: ${pgport_listen:="8081"}
+
+procname="/usr/local/bin/${name}"
+pidfile="/var/run/${name}.pid"
+start_precmd="${name}_precmd"
+command=/usr/sbin/daemon
+command_args="-S -l ${pgport_facility} -s ${pgport_priority} -T ${name} -t ${name} -p ${pidfile} \
+        ${procname} --bind=${pgport_bind} --listen=${pgport_listen} ${pgport_flags}"
+
+pgport_precmd()
+{
+        install -o ${pgport_user} /dev/null ${pidfile}
+}
+
+run_rc_command "$1"

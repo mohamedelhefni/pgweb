@@ -9,9 +9,9 @@ mkdir -p ./tmp
 rm -rf ./tmp/*
 
 # Fetch the latest published version
-curl -s https://api.github.com/repos/sosedoff/pgweb/releases/latest > $RELEASE_FILE
+curl -s https://api.github.com/repos/mohamedelhefni/pgport/releases/latest > $RELEASE_FILE
 VERSION="$(jq -r .tag_name < $RELEASE_FILE)"
-URL="https://github.com/sosedoff/pgweb/archive/$VERSION.tar.gz"
+URL="https://github.com/mohamedelhefni/pgport/archive/$VERSION.tar.gz"
 URL_SHA256=$(wget -qO- $URL | shasum -a 256 | cut -d ' ' -f 1)
 
 # Reset any changes
@@ -21,4 +21,4 @@ git -C $HOMEBREW_ROOT reset --hard
 brew bump-formula-pr \
   --url=$URL \
   --sha256=$URL_SHA256 \
-  pgweb
+  pgport

@@ -1,5 +1,5 @@
--- pgweb: host="localhost"
+-- pgport: host="localhost"
 -- some comment
--- pgweb: user="foo"
+-- pgport: user="foo"
 
 select 'foo'

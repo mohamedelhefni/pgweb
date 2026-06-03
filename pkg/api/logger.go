@@ -9,7 +9,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
 
-	"github.com/sosedoff/pgweb/pkg/command"
+	"github.com/mohamedelhefni/pgport/pkg/command"
 )
 
 var (

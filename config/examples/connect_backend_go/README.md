@@ -1,6 +1,6 @@
 # connect-backend-go
 
-Example Golang backend for Pgweb Connect feature
+Example Golang backend for pgport Connect feature
 
 ## Usage
 

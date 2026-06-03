@@ -8,7 +8,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/sosedoff/pgweb/pkg/client"
+	"github.com/mohamedelhefni/pgport/pkg/client"
 )
 
 func TestSessionManager(t *testing.T) {

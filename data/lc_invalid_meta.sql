@@ -1,2 +1,2 @@
--- pgweb: host="localhost" mode="foo"
+-- pgport: host="localhost" mode="foo"
 select 'foo'

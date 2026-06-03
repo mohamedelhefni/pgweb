@@ -11,7 +11,7 @@ import (
 var assets embed.FS
 
 func GetFilesystem() http.FileSystem {
-	if os.Getenv("PGWEB_ASSETS_DEVMODE") == "1" {
+	if os.Getenv("pgport_ASSETS_DEVMODE") == "1" {
 		return http.Dir("./static")
 	}
 	return http.FS(assets)

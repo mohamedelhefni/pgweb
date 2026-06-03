@@ -14,19 +14,19 @@ func Test_parseFields(t *testing.T) {
 	}{
 		{input: "", err: nil, vals: nil},
 		{input: "foobar", err: nil, vals: nil},
-		{input: "-- no pgweb meta", err: nil, vals: nil},
+		{input: "-- no pgport meta", err: nil, vals: nil},
 		{
-			input: `--pgweb: foo=bar`,
+			input: `--pgport: foo=bar`,
 			err:   nil,
 			vals:  map[string]string{},
 		},
 		{
-			input: `--pgweb: host="localhost"`,
+			input: `--pgport: host="localhost"`,
 			err:   nil,
 			vals:  map[string]string{"host": "localhost"},
 		},
 		{
-			input: `--pgweb: host="*" user="admin" database  ="mydb"; mode = "readonly"`,
+			input: `--pgport: host="*" user="admin" database  ="mydb"; mode = "readonly"`,
 			err:   nil,
 			vals: map[string]string{
 				"host":     "*",
@@ -53,25 +53,25 @@ func Test_parseMetadata(t *testing.T) {
 		check func(meta *Metadata) bool
 	}{
 		{
-			input: `--pgweb: `,
+			input: `--pgport: `,
 			err:   `host field must be set`,
 		},
 		{
-			input: `--pgweb: hello="world"`,
+			input: `--pgport: hello="world"`,
 			err:   `unknown key: "hello"`,
 		},
 		{
-			input: `--pgweb: host="localhost" user="anyuser" database="anydb" mode="foo"`,
+			input: `--pgport: host="localhost" user="anyuser" database="anydb" mode="foo"`,
 			err:   `invalid "mode" field value: "foo"`,
 		},
 		{
-			input: "--pgweb2:",
+			input: "--pgport2:",
 			check: func(m *Metadata) bool {
 				return m == nil
 			},
 		},
 		{
-			input: `--pgweb: host="localhost"`,
+			input: `--pgport: host="localhost"`,
 			check: func(m *Metadata) bool {
 				return m.Host.value == "localhost" &&
 					m.User.value == "*" &&
@@ -81,7 +81,7 @@ func Test_parseMetadata(t *testing.T) {
 			},
 		},
 		{
-			input: `--pgweb: host="localhost" user="anyuser" database="anydb" mode="*"`,
+			input: `--pgport: host="localhost" user="anyuser" database="anydb" mode="*"`,
 			check: func(m *Metadata) bool {
 				return m.Host.value == "localhost" &&
 					m.Host.re == nil &&
@@ -92,11 +92,11 @@ func Test_parseMetadata(t *testing.T) {
 			},
 		},
 		{
-			input: `--pgweb: host="localhost" timeout="foo"`,
+			input: `--pgport: host="localhost" timeout="foo"`,
 			err:   `error initializing "timeout" field: strconv.Atoi: parsing "foo": invalid syntax`,
 		},
 		{
-			input: `-- pgweb: host="local(host|dev)"`,
+			input: `-- pgport: host="local(host|dev)"`,
 			check: func(m *Metadata) bool {
 				return m.Host.value == "local(host|dev)" && m.Host.re != nil &&
 					m.Host.matches("localhost") && m.Host.matches("localdev") &&
@@ -127,9 +127,9 @@ func Test_sanitizeMetadata(t *testing.T) {
 		{input: "foo", output: "foo"},
 		{
 			input: `
--- pgweb: metadata
+-- pgport: metadata
 query1
--- pgweb: more metadata
+-- pgport: more metadata
 
 query2
 

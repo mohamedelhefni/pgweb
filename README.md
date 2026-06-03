@@ -1,10 +1,10 @@
 # pgport
 
-A fork of [pgweb](https://github.com/sosedoff/pgweb) — the lightweight self-hosted PostgreSQL web client — with keyboard-first navigation, inline data editing, tabbed queries, vim mode, and more.
+A fork of [pgport](https://github.com/mohamedelhefni/pgport) — the lightweight self-hosted PostgreSQL web client — with keyboard-first navigation, inline data editing, tabbed queries, vim mode, and more.
 
 ## What's new in pgport
 
-On top of everything pgweb already does, pgport adds:
+On top of everything pgport already does, pgport adds:
 
 - **Command Palette** (`Cmd/Ctrl+P`) — fuzzy-search across all tables, views, and functions. Keyboard-only navigation, no mouse required.
 - **Inline Cell Editing** — double-click any cell in browse mode to edit it. Uses PostgreSQL `ctid` for safe row identity, no primary key assumption.
@@ -15,7 +15,7 @@ On top of everything pgweb already does, pgport adds:
 - **JSON Pretty-Print** — JSON column values are automatically formatted when opened in the content modal.
 - **Expandable Schema Rows** — expand any table in the sidebar to preview column names and types inline.
 
-## Original pgweb features
+## Original pgport features
 
 - Cross-platform: Mac/Linux/Windows (64bit).
 - Simple installation (distributed as a single binary).
@@ -71,7 +71,7 @@ pgport --sessions
 Or via environment variable:
 
 ```
-PGWEB_SESSIONS=1 pgport
+pgport_SESSIONS=1 pgport
 ```
 
 ## Development
@@ -82,11 +82,11 @@ make test    # run test suite (requires PostgreSQL on localhost:5432)
 make lint    # run golangci-lint
 ```
 
-Tests require a live PostgreSQL server on `localhost:5432` with a `postgres` superuser. Set `PGWEB_ASSETS_DEVMODE=1` to serve static files from `./static/` on disk.
+Tests require a live PostgreSQL server on `localhost:5432` with a `postgres` superuser. Set `pgport_ASSETS_DEVMODE=1` to serve static files from `./static/` on disk.
 
 ## Credits
 
-pgport is a fork of [sosedoff/pgweb](https://github.com/sosedoff/pgweb). All original work and architecture belong to its author and contributors.
+pgport is a fork of [mohamedelhefni/pgport](https://github.com/mohamedelhefni/pgport). All original work and architecture belong to its author and contributors.
 
 ## License
 

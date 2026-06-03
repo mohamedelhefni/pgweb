@@ -47,7 +47,7 @@ build:
 
 install:
 	go install -ldflags '${LDFLAGS}'
-	@echo "You can now execute pgweb"
+	@echo "You can now execute pgport"
 
 release: clean
 	@echo "Building binaries..."
@@ -55,7 +55,7 @@ release: clean
 
 clean:
 	@echo "Removing all artifacts"
-	@rm -rf ./pgweb ./bin/*
+	@rm -rf ./pgport ./bin/*
 
 docker:
 	docker build --no-cache -t pgport .

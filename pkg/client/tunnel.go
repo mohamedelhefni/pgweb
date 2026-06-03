@@ -16,8 +16,8 @@ import (
 	"github.com/ScaleFT/sshkeys"
 	"golang.org/x/crypto/ssh"
 
-	"github.com/sosedoff/pgweb/pkg/connection"
-	"github.com/sosedoff/pgweb/pkg/shared"
+	"github.com/mohamedelhefni/pgport/pkg/connection"
+	"github.com/mohamedelhefni/pgport/pkg/shared"
 )
 
 const (

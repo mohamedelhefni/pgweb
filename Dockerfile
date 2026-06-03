@@ -28,9 +28,9 @@ COPY --from=build /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 # Timezone database for correct timestamp handling
 COPY --from=build /usr/share/zoneinfo /usr/share/zoneinfo
 
-COPY --from=build /build/pgweb /usr/bin/pgweb
+COPY --from=build /build/pgport /usr/bin/pgport
 
 USER 1000
 
 EXPOSE 8081
-ENTRYPOINT ["/usr/bin/pgweb", "--bind=0.0.0.0", "--listen=8081"]
+ENTRYPOINT ["/usr/bin/pgport", "--bind=0.0.0.0", "--listen=8081"]

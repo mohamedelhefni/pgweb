@@ -1,32 +1,32 @@
 ---
 services:
   postgres:
-    container_name: pgweb-postgres
+    container_name: pgport-postgres
     image: postgres:15
     ports:
       - 5433:5432
     volumes:
       - data:/var/lib/postgresql/data
     environment:
-      POSTGRES_DB: pgweb
-      POSTGRES_PASSWORD: pgweb
-      POSTGRES_USER: pgweb
+      POSTGRES_DB: pgport
+      POSTGRES_PASSWORD: pgport
+      POSTGRES_USER: pgport
     healthcheck:
-      test: pg_isready -U pgweb -h 127.0.0.1
+      test: pg_isready -U pgport -h 127.0.0.1
       interval: 5s
     networks:
-      - pgweb
+      - pgport
 
-  pgweb:
-    container_name: pgweb
-    image: sosedoff/pgweb:latest
+  pgport:
+    container_name: pgport
+    image: mohamedelhefni/pgport:latest
     build: .
     environment:
-      PGWEB_DATABASE_URL: postgres://pgweb:pgweb@pgweb-postgres:5432/pgweb?sslmode=disable
+      pgport_DATABASE_URL: postgres://pgport:pgport@pgport-postgres:5432/pgport?sslmode=disable
     ports:
       - 8081:8081
     networks:
-      - pgweb
+      - pgport
     depends_on:
       postgres:
         condition: service_healthy
@@ -36,8 +36,8 @@ services:
 
 volumes:
   data:
-    name: pgweb_postgres
+    name: pgport_postgres
 
 networks:
-  pgweb:
-    name: pgweb
+  pgport:
+    name: pgport

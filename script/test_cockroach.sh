@@ -4,7 +4,7 @@ set -e
 
 function killproc() {
   if [[ $(lsof -i tcp:8888) ]]; then
-    lsof -i tcp:8888 | grep pgweb | awk '{print $2}' | xargs kill
+    lsof -i tcp:8888 | grep pgport | awk '{print $2}' | xargs kill
   fi
 }
 
@@ -25,14 +25,14 @@ sleep 3
 # Load the demo database.
 docker exec -i cockroach ./cockroach sql --insecure < ./data/roach.sql
 
-# Find and destroy the existing pgweb process.
-# Would be great if pgweb had --pid option.
+# Find and destroy the existing pgport process.
+# Would be great if pgport had --pid option.
 killproc
 
-# Start pgweb and connect to cockroach.
+# Start pgport and connect to cockroach.
 make build
 
-./pgweb \
+./pgport \
   --url=postgres://root@localhost:26258/roach?sslmode=disable \
   --listen=8888 \
   --skip-open &

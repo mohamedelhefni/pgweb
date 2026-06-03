@@ -12,15 +12,15 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/tuvistavie/securerandom"
 
-	"github.com/sosedoff/pgweb/pkg/bookmarks"
-	"github.com/sosedoff/pgweb/pkg/client"
-	"github.com/sosedoff/pgweb/pkg/command"
-	"github.com/sosedoff/pgweb/pkg/connect"
-	"github.com/sosedoff/pgweb/pkg/connection"
-	"github.com/sosedoff/pgweb/pkg/metrics"
-	"github.com/sosedoff/pgweb/pkg/queries"
-	"github.com/sosedoff/pgweb/pkg/shared"
-	"github.com/sosedoff/pgweb/static"
+	"github.com/mohamedelhefni/pgport/pkg/bookmarks"
+	"github.com/mohamedelhefni/pgport/pkg/client"
+	"github.com/mohamedelhefni/pgport/pkg/command"
+	"github.com/mohamedelhefni/pgport/pkg/connect"
+	"github.com/mohamedelhefni/pgport/pkg/connection"
+	"github.com/mohamedelhefni/pgport/pkg/metrics"
+	"github.com/mohamedelhefni/pgport/pkg/queries"
+	"github.com/mohamedelhefni/pgport/pkg/shared"
+	"github.com/mohamedelhefni/pgport/static"
 )
 
 var (
@@ -606,7 +606,7 @@ func GetTablesStats(c *gin.Context) {
 	if getQueryParam(c, "export") == "true" {
 		ts := time.Now().Format(time.DateOnly)
 
-		filename := fmt.Sprintf("pgweb-dbstats-%s-%s.%s", connCtx.Database, ts, format)
+		filename := fmt.Sprintf("pgport-dbstats-%s-%s.%s", connCtx.Database, ts, format)
 		c.Writer.Header().Set("Content-disposition", "attachment;filename="+filename)
 	}
 
@@ -641,7 +641,7 @@ func HandleQuery(query string, c *gin.Context) {
 	filename := getQueryParam(c, "filename")
 
 	if filename == "" {
-		filename = fmt.Sprintf("pgweb-%v.%v", time.Now().Unix(), format)
+		filename = fmt.Sprintf("pgport-%v.%v", time.Now().Unix(), format)
 	}
 
 	if format != "" {
@@ -667,7 +667,7 @@ func GetBookmarks(c *gin.Context) {
 	serveResult(c, ids, err)
 }
 
-// GetInfo renders the pgweb system information
+// GetInfo renders the pgport system information
 func GetInfo(c *gin.Context) {
 	successResponse(c, gin.H{
 		"app": command.Info,

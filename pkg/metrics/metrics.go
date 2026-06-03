@@ -9,27 +9,27 @@ import (
 
 var (
 	sessionsGauge = promauto.NewGauge(prometheus.GaugeOpts{
-		Name: "pgweb_sessions_count",
+		Name: "pgport_sessions_count",
 		Help: "Total number of database sessions",
 	})
 
 	queriesCounter = promauto.NewCounter(prometheus.CounterOpts{
-		Name: "pgweb_queries_count",
+		Name: "pgport_queries_count",
 		Help: "Total number of custom queries executed",
 	})
 
 	healthyGauge = promauto.NewGauge(prometheus.GaugeOpts{
-		Name: "pgweb_healthy",
+		Name: "pgport_healthy",
 		Help: "Server health status",
 	})
 
 	startTimeGauge = promauto.NewGauge(prometheus.GaugeOpts{
-		Name: "pgweb_process_start_time",
+		Name: "pgport_process_start_time",
 		Help: "Server start time, seconds since unix epoch",
 	})
 
 	uptimeGauge = promauto.NewGauge(prometheus.GaugeOpts{
-		Name: "pgweb_uptime",
+		Name: "pgport_uptime",
 		Help: "Server application uptime in seconds",
 	})
 )

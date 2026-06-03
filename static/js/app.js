@@ -442,22 +442,29 @@ function unescapeHtml(str) {
   return e.childNodes.length === 0 ? "" : e.childNodes[0].nodeValue;
 }
 
-var SAVED_CONNECTIONS_KEY = "pgweb_saved_connections";
-var RECENT_CONNECTIONS_KEY = "pgweb_recent_connections";
+var SAVED_CONNECTIONS_KEY = "pgport_saved_connections";
+var RECENT_CONNECTIONS_KEY = "pgport_recent_connections";
 var MAX_RECENT = 5;
 
 function getSavedConnections() {
-  try { return JSON.parse(localStorage.getItem(SAVED_CONNECTIONS_KEY) || "[]"); }
-  catch(e) { return []; }
+  try {
+    return JSON.parse(localStorage.getItem(SAVED_CONNECTIONS_KEY) || "[]");
+  } catch (e) {
+    return [];
+  }
 }
 
 function getRecentConnections() {
-  try { return JSON.parse(localStorage.getItem(RECENT_CONNECTIONS_KEY) || "[]"); }
-  catch(e) { return []; }
+  try {
+    return JSON.parse(localStorage.getItem(RECENT_CONNECTIONS_KEY) || "[]");
+  } catch (e) {
+    return [];
+  }
 }
 
 function getFormConnectionData() {
-  var mode = $(".connection-group-switch button.active").attr("data") || "standard";
+  var mode =
+    $(".connection-group-switch button.active").attr("data") || "standard";
   return {
     mode: mode,
     url: $.trim($("#connection_url").val()),
@@ -472,36 +479,66 @@ function getFormConnectionData() {
     ssh_user: $.trim($("#ssh_user").val()),
     ssh_password: $("#ssh_password").val(),
     ssh_key: $.trim($("#ssh_key").val()),
-    ssh_key_password: $("#ssh_key_password").val()
+    ssh_key_password: $("#ssh_key_password").val(),
   };
 }
 
 function saveConnectionToStorage(name, data) {
   var list = getSavedConnections();
-  list.unshift({ id: guid(), name: name, mode: data.mode, url: data.url,
-    host: data.host, port: data.port, user: data.user, password: data.password,
-    db: data.db, ssl: data.ssl, ssh_host: data.ssh_host, ssh_port: data.ssh_port,
-    ssh_user: data.ssh_user, ssh_password: data.ssh_password,
-    ssh_key: data.ssh_key, ssh_key_password: data.ssh_key_password,
-    savedAt: new Date().toISOString() });
+  list.unshift({
+    id: guid(),
+    name: name,
+    mode: data.mode,
+    url: data.url,
+    host: data.host,
+    port: data.port,
+    user: data.user,
+    password: data.password,
+    db: data.db,
+    ssl: data.ssl,
+    ssh_host: data.ssh_host,
+    ssh_port: data.ssh_port,
+    ssh_user: data.ssh_user,
+    ssh_password: data.ssh_password,
+    ssh_key: data.ssh_key,
+    ssh_key_password: data.ssh_key_password,
+    savedAt: new Date().toISOString(),
+  });
   localStorage.setItem(SAVED_CONNECTIONS_KEY, JSON.stringify(list));
 }
 
 function addRecentConnectionToStorage(data) {
   if (!data.host && !data.url) return;
   var key = data.host + "|" + data.port + "|" + data.user + "|" + data.db;
-  var list = getRecentConnections().filter(function(c) {
-    return (c.host + "|" + c.port + "|" + c.user + "|" + c.db) !== key;
+  var list = getRecentConnections().filter(function (c) {
+    return c.host + "|" + c.port + "|" + c.user + "|" + c.db !== key;
   });
-  list.unshift({ id: guid(), mode: data.mode, host: data.host, port: data.port,
-    user: data.user, db: data.db, ssl: data.ssl, url: data.url,
-    connectedAt: new Date().toISOString() });
-  localStorage.setItem(RECENT_CONNECTIONS_KEY, JSON.stringify(list.slice(0, MAX_RECENT)));
+  list.unshift({
+    id: guid(),
+    mode: data.mode,
+    host: data.host,
+    port: data.port,
+    user: data.user,
+    db: data.db,
+    ssl: data.ssl,
+    url: data.url,
+    connectedAt: new Date().toISOString(),
+  });
+  localStorage.setItem(
+    RECENT_CONNECTIONS_KEY,
+    JSON.stringify(list.slice(0, MAX_RECENT)),
+  );
 }
 
 function deleteSavedConnection(id) {
-  localStorage.setItem(SAVED_CONNECTIONS_KEY,
-    JSON.stringify(getSavedConnections().filter(function(c) { return c.id !== id; })));
+  localStorage.setItem(
+    SAVED_CONNECTIONS_KEY,
+    JSON.stringify(
+      getSavedConnections().filter(function (c) {
+        return c.id !== id;
+      }),
+    ),
+  );
 }
 
 function timeAgo(iso) {
@@ -518,26 +555,45 @@ function setConnectionMode(mode) {
   $(".connection-scheme-group").hide();
   $(".connection-standard-group").hide();
   $(".connection-ssh-group").hide();
-  if (mode === "scheme") { $(".connection-scheme-group").show(); }
-  else if (mode === "standard") { $(".connection-standard-group").show(); }
-  else if (mode === "ssh") { $(".connection-standard-group").show(); $(".connection-ssh-group").show(); }
+  if (mode === "scheme") {
+    $(".connection-scheme-group").show();
+  } else if (mode === "standard") {
+    $(".connection-standard-group").show();
+  } else if (mode === "ssh") {
+    $(".connection-standard-group").show();
+    $(".connection-ssh-group").show();
+  }
 }
 
 function renderSavedConnections() {
   var list = $("#saved_connections_list").empty();
   var conns = getSavedConnections();
-  if (!conns.length) { list.html('<div class="conn-sidebar-empty">No saved connections</div>'); return; }
-  conns.forEach(function(c) {
-    var meta = c.mode === "scheme"
-      ? (c.url || "").replace(/:[^:@]*@/, ":***@")
-      : (c.user || "") + "@" + (c.host || "localhost") + "/" + (c.db || "");
-    var el = $('<div class="conn-item" data-id="' + c.id + '">' +
-      '<div class="conn-item-body">' +
-        '<div class="conn-item-name">' + escapeHtml(c.name) + '</div>' +
-        '<div class="conn-item-meta">' + escapeHtml(meta) + '</div>' +
-      '</div>' +
-      '<button type="button" class="conn-item-delete" data-id="' + c.id + '" title="Remove">&times;</button>' +
-    '</div>');
+  if (!conns.length) {
+    list.html('<div class="conn-sidebar-empty">No saved connections</div>');
+    return;
+  }
+  conns.forEach(function (c) {
+    var meta =
+      c.mode === "scheme"
+        ? (c.url || "").replace(/:[^:@]*@/, ":***@")
+        : (c.user || "") + "@" + (c.host || "localhost") + "/" + (c.db || "");
+    var el = $(
+      '<div class="conn-item" data-id="' +
+        c.id +
+        '">' +
+        '<div class="conn-item-body">' +
+        '<div class="conn-item-name">' +
+        escapeHtml(c.name) +
+        "</div>" +
+        '<div class="conn-item-meta">' +
+        escapeHtml(meta) +
+        "</div>" +
+        "</div>" +
+        '<button type="button" class="conn-item-delete" data-id="' +
+        c.id +
+        '" title="Remove">&times;</button>' +
+        "</div>",
+    );
     list.append(el);
   });
 }
@@ -545,17 +601,29 @@ function renderSavedConnections() {
 function renderRecentConnections() {
   var list = $("#recent_connections_list").empty();
   var conns = getRecentConnections();
-  if (!conns.length) { list.html('<div class="conn-sidebar-empty">No recent connections</div>'); return; }
-  conns.forEach(function(c) {
-    var name = c.mode === "scheme"
-      ? (c.url || "").replace(/:[^:@]*@/, ":***@").substring(0, 38)
-      : (c.user || "") + "@" + (c.host || "localhost") + "/" + (c.db || "");
-    var el = $('<div class="conn-item conn-item-recent" data-id="' + c.id + '">' +
-      '<div class="conn-item-body">' +
-        '<div class="conn-item-name">' + escapeHtml(name) + '</div>' +
-        '<div class="conn-item-meta">' + timeAgo(c.connectedAt) + '</div>' +
-      '</div>' +
-    '</div>');
+  if (!conns.length) {
+    list.html('<div class="conn-sidebar-empty">No recent connections</div>');
+    return;
+  }
+  conns.forEach(function (c) {
+    var name =
+      c.mode === "scheme"
+        ? (c.url || "").replace(/:[^:@]*@/, ":***@").substring(0, 38)
+        : (c.user || "") + "@" + (c.host || "localhost") + "/" + (c.db || "");
+    var el = $(
+      '<div class="conn-item conn-item-recent" data-id="' +
+        c.id +
+        '">' +
+        '<div class="conn-item-body">' +
+        '<div class="conn-item-name">' +
+        escapeHtml(name) +
+        "</div>" +
+        '<div class="conn-item-meta">' +
+        timeAgo(c.connectedAt) +
+        "</div>" +
+        "</div>" +
+        "</div>",
+    );
     list.append(el);
   });
 }
@@ -566,7 +634,9 @@ function renderConnectionsSidebar() {
 }
 
 function loadSavedConnectionIntoForm(id) {
-  var c = getSavedConnections().filter(function(x) { return x.id === id; })[0];
+  var c = getSavedConnections().filter(function (x) {
+    return x.id === id;
+  })[0];
   if (!c) return;
   setConnectionMode(c.mode || "standard");
   $("#connection_url").val(c.url || "");
@@ -588,7 +658,9 @@ function loadSavedConnectionIntoForm(id) {
 }
 
 function loadRecentConnectionIntoForm(id) {
-  var c = getRecentConnections().filter(function(x) { return x.id === id; })[0];
+  var c = getRecentConnections().filter(function (x) {
+    return x.id === id;
+  })[0];
   if (!c) return;
   setConnectionMode(c.mode || "standard");
   $("#connection_url").val(c.url || "");
@@ -599,8 +671,11 @@ function loadRecentConnectionIntoForm(id) {
   $("#pg_db").val(c.db || "");
   $("#connection_ssl").val(c.ssl || "disable");
   $("#connection_error").hide();
-  if (c.mode === "scheme") { $("#connection_url").focus(); }
-  else { $("#pg_password").focus(); }
+  if (c.mode === "scheme") {
+    $("#connection_url").focus();
+  } else {
+    $("#pg_password").focus();
+  }
 }
 
 function tryParseJSON(str) {
@@ -663,7 +738,9 @@ function openRowSidebar(tr) {
   rowSidebarCtid = ctid;
   rowSidebarTable = table;
 
-  rowSidebarEditors.forEach(function (ed) { ed.destroy(); });
+  rowSidebarEditors.forEach(function (ed) {
+    ed.destroy();
+  });
   rowSidebarEditors = [];
   window.rowSidebarEditors = rowSidebarEditors;
 
@@ -674,47 +751,60 @@ function openRowSidebar(tr) {
 
   var fieldsEl = $("#row_sidebar_fields").empty();
 
-  $(tr).find("td").each(function (i) {
-    var colName = $(this).data("col-name");
-    var value = unescapeHtml($(this).find("div").html());
-    if (!colName) return;
+  $(tr)
+    .find("td")
+    .each(function (i) {
+      var colName = $(this).data("col-name");
+      var value = unescapeHtml($(this).find("div").html());
+      if (!colName) return;
 
-    var editorId = "rsf_editor_" + i;
-    var fieldEl = $("<div class='row-sidebar-field'></div>");
-    fieldEl.append("<label title='" + escapeAttr(colName) + "'>" + escapeHtml(colName) + "</label>");
-    fieldEl.append("<div class='row-sidebar-ace' id='" + editorId + "'></div>");
-    fieldEl.append("<div class='ace-field-resize-handle'></div>");
-    fieldsEl.append(fieldEl);
+      var editorId = "rsf_editor_" + i;
+      var fieldEl = $("<div class='row-sidebar-field'></div>");
+      fieldEl.append(
+        "<label title='" +
+          escapeAttr(colName) +
+          "'>" +
+          escapeHtml(colName) +
+          "</label>",
+      );
+      fieldEl.append(
+        "<div class='row-sidebar-ace' id='" + editorId + "'></div>",
+      );
+      fieldEl.append("<div class='ace-field-resize-handle'></div>");
+      fieldsEl.append(fieldEl);
 
-    var ed = ace.edit(editorId);
-    ed.setTheme(theme);
-    ed.setShowPrintMargin(false);
-    ed.setFontSize(12);
-    ed.renderer.setShowGutter(false);
-    ed.setHighlightActiveLine(false);
-    ed.setOption("useWorker", false);
-    ed.getSession().setTabSize(2);
-    ed.getSession().setUseSoftTabs(true);
+      var ed = ace.edit(editorId);
+      ed.setTheme(theme);
+      ed.setShowPrintMargin(false);
+      ed.setFontSize(12);
+      ed.renderer.setShowGutter(false);
+      ed.setHighlightActiveLine(false);
+      ed.setOption("useWorker", false);
+      ed.getSession().setTabSize(2);
+      ed.getSession().setUseSoftTabs(true);
 
-    var isJson = false;
-    var parsed = tryParseJSON(value);
-    if (parsed !== null) {
-      ed.setValue(JSON.stringify(parsed, null, 2), -1);
-      ed.getSession().setMode("ace/mode/json");
-      isJson = true;
-    } else {
-      ed.setValue(value !== null && value !== undefined ? String(value) : "", -1);
-      ed.getSession().setMode("ace/mode/text");
-    }
+      var isJson = false;
+      var parsed = tryParseJSON(value);
+      if (parsed !== null) {
+        ed.setValue(JSON.stringify(parsed, null, 2), -1);
+        ed.getSession().setMode("ace/mode/json");
+        isJson = true;
+      } else {
+        ed.setValue(
+          value !== null && value !== undefined ? String(value) : "",
+          -1,
+        );
+        ed.getSession().setMode("ace/mode/text");
+      }
 
-    var editorMode = localStorage.getItem("editorMode");
-    if (editorMode) ed.setKeyboardHandler(editorMode);
+      var editorMode = localStorage.getItem("editorMode");
+      if (editorMode) ed.setKeyboardHandler(editorMode);
 
-    ed._colName = colName;
-    ed._isJson = isJson;
-    ed._originalValue = ed.getValue();
-    rowSidebarEditors.push(ed);
-  });
+      ed._colName = colName;
+      ed._isJson = isJson;
+      ed._originalValue = ed.getValue();
+      rowSidebarEditors.push(ed);
+    });
 
   window.rowSidebarEditors = rowSidebarEditors;
 
@@ -734,7 +824,9 @@ function openRowSidebar(tr) {
 }
 
 function closeRowSidebar() {
-  rowSidebarEditors.forEach(function (ed) { ed.destroy(); });
+  rowSidebarEditors.forEach(function (ed) {
+    ed.destroy();
+  });
   rowSidebarEditors = [];
   window.rowSidebarEditors = rowSidebarEditors;
   rowSidebarCtid = null;
@@ -756,7 +848,10 @@ function bindRowSidebar() {
       return ed.getValue() !== ed._originalValue;
     });
 
-    if (changed.length === 0) { closeRowSidebar(); return; }
+    if (changed.length === 0) {
+      closeRowSidebar();
+      return;
+    }
 
     var pending = changed.length;
     var errors = [];
@@ -781,14 +876,16 @@ function bindRowSidebar() {
               showPaginatedTableContent();
             }
           }
-        }
+        },
       );
     });
   });
 
   // Sidebar width drag (left edge handle)
   var sidebarEl = document.getElementById("row_sidebar");
-  var sidebarResizeHandle = document.getElementById("row_sidebar_resize_handle");
+  var sidebarResizeHandle = document.getElementById(
+    "row_sidebar_resize_handle",
+  );
   sidebarResizeHandle.addEventListener("mousedown", function (e) {
     e.preventDefault();
     var startX = e.clientX;
@@ -798,7 +895,10 @@ function bindRowSidebar() {
     document.body.style.userSelect = "none";
 
     function onMove(e) {
-      var w = Math.min(Math.max(startW + (startX - e.clientX), 260), Math.floor(window.innerWidth * 0.7));
+      var w = Math.min(
+        Math.max(startW + (startX - e.clientX), 260),
+        Math.floor(window.innerWidth * 0.7),
+      );
       sidebarEl.style.width = w + "px";
     }
 
@@ -808,7 +908,9 @@ function bindRowSidebar() {
       document.body.style.userSelect = "";
       document.removeEventListener("mousemove", onMove);
       document.removeEventListener("mouseup", onUp);
-      rowSidebarEditors.forEach(function (ed) { ed.resize(); });
+      rowSidebarEditors.forEach(function (ed) {
+        ed.resize();
+      });
     }
 
     document.addEventListener("mousemove", onMove);
@@ -816,34 +918,42 @@ function bindRowSidebar() {
   });
 
   // Per-field height drag (bottom handle of each editor)
-  $("#row_sidebar_fields").on("mousedown", ".ace-field-resize-handle", function (e) {
-    e.preventDefault();
-    var handle = $(this);
-    var aceEl = handle.prev(".row-sidebar-ace");
-    var startY = e.clientY;
-    var startH = aceEl.height();
-    var editorId = aceEl.attr("id");
-    var ed = rowSidebarEditors.filter(function (ed) { return ed.container.id === editorId; })[0];
+  $("#row_sidebar_fields").on(
+    "mousedown",
+    ".ace-field-resize-handle",
+    function (e) {
+      e.preventDefault();
+      var handle = $(this);
+      var aceEl = handle.prev(".row-sidebar-ace");
+      var startY = e.clientY;
+      var startH = aceEl.height();
+      var editorId = aceEl.attr("id");
+      var ed = rowSidebarEditors.filter(function (ed) {
+        return ed.container.id === editorId;
+      })[0];
 
-    handle.addClass("dragging");
-    document.body.style.cursor = "ns-resize";
-    document.body.style.userSelect = "none";
+      handle.addClass("dragging");
+      document.body.style.cursor = "ns-resize";
+      document.body.style.userSelect = "none";
 
-    function onMove(e) {
-      var h = Math.max(40, startH + (e.clientY - startY));
-      aceEl.height(h);
-      if (ed) ed.resize();
-    }
+      function onMove(e) {
+        var h = Math.max(40, startH + (e.clientY - startY));
+        aceEl.height(h);
+        if (ed) ed.resize();
+      }
 
-    function onUp() {
-      handle.removeClass("dragging");
-      document.body.style.cursor = "";
-      document.body.style.userSelect = "";
-      $(document).off("mousemove.fieldresize mouseup.fieldresize");
-    }
+      function onUp() {
+        handle.removeClass("dragging");
+        document.body.style.cursor = "";
+        document.body.style.userSelect = "";
+        $(document).off("mousemove.fieldresize mouseup.fieldresize");
+      }
 
-    $(document).on("mousemove.fieldresize", onMove).on("mouseup.fieldresize", onUp);
-  });
+      $(document)
+        .on("mousemove.fieldresize", onMove)
+        .on("mouseup.fieldresize", onUp);
+    },
+  );
 }
 
 function performTableAction(table, action, el) {
@@ -1490,29 +1600,43 @@ function formatSQL(sql) {
     protected_parts.push(m);
     return "\x00" + (protected_parts.length - 1) + "\x00";
   }
-  sql = sql.replace(/'(?:[^'\\]|\\.)*'|"(?:[^"\\]|\\.)*"|\$\$[\s\S]*?\$\$/g, protect);
+  sql = sql.replace(
+    /'(?:[^'\\]|\\.)*'|"(?:[^"\\]|\\.)*"|\$\$[\s\S]*?\$\$/g,
+    protect,
+  );
 
   // Normalize whitespace
   sql = sql.replace(/\s+/g, " ").trim();
 
   // Major clause keywords → newline before
   var clauses = [
-    "SELECT DISTINCT", "SELECT",
-    "INSERT INTO", "INSERT",
+    "SELECT DISTINCT",
+    "SELECT",
+    "INSERT INTO",
+    "INSERT",
     "UPDATE",
-    "DELETE FROM", "DELETE",
+    "DELETE FROM",
+    "DELETE",
     "FROM",
     "SET",
     "WHERE",
-    "INNER JOIN", "LEFT OUTER JOIN", "RIGHT OUTER JOIN", "FULL OUTER JOIN",
-    "CROSS JOIN", "LEFT JOIN", "RIGHT JOIN", "FULL JOIN", "JOIN",
+    "INNER JOIN",
+    "LEFT OUTER JOIN",
+    "RIGHT OUTER JOIN",
+    "FULL OUTER JOIN",
+    "CROSS JOIN",
+    "LEFT JOIN",
+    "RIGHT JOIN",
+    "FULL JOIN",
+    "JOIN",
     "ON",
     "GROUP BY",
     "HAVING",
     "ORDER BY",
     "LIMIT",
     "OFFSET",
-    "UNION ALL", "UNION",
+    "UNION ALL",
+    "UNION",
     "INTERSECT",
     "EXCEPT",
     "VALUES",
@@ -1521,13 +1645,23 @@ function formatSQL(sql) {
   ];
 
   var clauseRe = new RegExp(
-    "\\b(" + clauses.map(function (k) { return k.replace(/ /g, "\\s+"); }).join("|") + ")\\b",
-    "gi"
+    "\\b(" +
+      clauses
+        .map(function (k) {
+          return k.replace(/ /g, "\\s+");
+        })
+        .join("|") +
+      ")\\b",
+    "gi",
   );
-  sql = sql.replace(clauseRe, function (m) { return "\n" + m.toUpperCase(); });
+  sql = sql.replace(clauseRe, function (m) {
+    return "\n" + m.toUpperCase();
+  });
 
   // AND / OR in conditions → indent
-  sql = sql.replace(/\b(AND|OR)\b/gi, function (m) { return "\n  " + m.toUpperCase(); });
+  sql = sql.replace(/\b(AND|OR)\b/gi, function (m) {
+    return "\n  " + m.toUpperCase();
+  });
 
   // Depth-based indentation via paren tracking
   var lines = sql.split("\n");
@@ -1550,7 +1684,9 @@ function formatSQL(sql) {
   sql = output.join("\n");
 
   // Restore protected parts
-  sql = sql.replace(/\x00(\d+)\x00/g, function (m, i) { return protected_parts[+i]; });
+  sql = sql.replace(/\x00(\d+)\x00/g, function (m, i) {
+    return protected_parts[+i];
+  });
 
   return sql.trim();
 }
@@ -1581,17 +1717,20 @@ function validateSQLSyntax(sql) {
   var errors = [];
   var len = sql.length;
   var i = 0;
-  var row = 0, col = 0;
+  var row = 0,
+    col = 0;
 
-  var inLineComment   = false;
-  var inBlockComment  = false;
-  var inString        = false;
-  var stringChar      = null;
-  var stringRow = 0,  stringCol = 0;
-  var inDollarQuote   = false;
-  var dollarTag       = "";
-  var dollarRow = 0,  dollarCol = 0;
-  var parenStack      = [];          // [{row, col}]
+  var inLineComment = false;
+  var inBlockComment = false;
+  var inString = false;
+  var stringChar = null;
+  var stringRow = 0,
+    stringCol = 0;
+  var inDollarQuote = false;
+  var dollarTag = "";
+  var dollarRow = 0,
+    dollarCol = 0;
+  var parenStack = []; // [{row, col}]
 
   function peek(offset) {
     return i + offset < len ? sql[i + offset] : "";
@@ -1602,8 +1741,12 @@ function validateSQLSyntax(sql) {
   // valid dollar-quote opener.
   function readDollarTag() {
     var j = i + 1;
-    while (j < len && sql[j] !== "$" && sql[j] !== "\n" &&
-           (sql[j] === "_" || /[a-zA-Z0-9_]/.test(sql[j]))) {
+    while (
+      j < len &&
+      sql[j] !== "$" &&
+      sql[j] !== "\n" &&
+      (sql[j] === "_" || /[a-zA-Z0-9_]/.test(sql[j]))
+    ) {
       j++;
     }
     if (j < len && sql[j] === "$") {
@@ -1617,18 +1760,29 @@ function validateSQLSyntax(sql) {
 
     // ── line comment ──────────────────────────────────────────────
     if (inLineComment) {
-      if (ch === "\n") { inLineComment = false; row++; col = 0; }
-      else              col++;
-      i++; continue;
+      if (ch === "\n") {
+        inLineComment = false;
+        row++;
+        col = 0;
+      } else col++;
+      i++;
+      continue;
     }
 
     // ── block comment ─────────────────────────────────────────────
     if (inBlockComment) {
       if (ch === "*" && peek(1) === "/") {
         inBlockComment = false;
-        col += 2; i += 2;
-      } else if (ch === "\n") { row++; col = 0; i++; }
-      else                    { col++;          i++; }
+        col += 2;
+        i += 2;
+      } else if (ch === "\n") {
+        row++;
+        col = 0;
+        i++;
+      } else {
+        col++;
+        i++;
+      }
       continue;
     }
 
@@ -1637,9 +1791,15 @@ function validateSQLSyntax(sql) {
       if (ch === "$" && sql.slice(i, i + dollarTag.length) === dollarTag) {
         inDollarQuote = false;
         col += dollarTag.length;
-        i   += dollarTag.length;
-      } else if (ch === "\n") { row++; col = 0; i++; }
-      else                    { col++;          i++; }
+        i += dollarTag.length;
+      } else if (ch === "\n") {
+        row++;
+        col = 0;
+        i++;
+      } else {
+        col++;
+        i++;
+      }
       continue;
     }
 
@@ -1649,13 +1809,23 @@ function validateSQLSyntax(sql) {
         // standard_conforming_strings is on by default; backslash
         // escapes only in E'' strings, but for the sake of the client
         // validator just skip the next char.
-        col += 2; i += 2;
+        col += 2;
+        i += 2;
       } else if (ch === stringChar && peek(1) === stringChar) {
-        col += 2; i += 2;          // '' or "" → escaped quote
+        col += 2;
+        i += 2; // '' or "" → escaped quote
       } else if (ch === stringChar) {
-        inString = false; col++; i++;
-      } else if (ch === "\n") { row++; col = 0; i++; }
-      else                    { col++;          i++; }
+        inString = false;
+        col++;
+        i++;
+      } else if (ch === "\n") {
+        row++;
+        col = 0;
+        i++;
+      } else {
+        col++;
+        i++;
+      }
       continue;
     }
 
@@ -1663,12 +1833,18 @@ function validateSQLSyntax(sql) {
 
     // Line comment
     if (ch === "-" && peek(1) === "-") {
-      inLineComment = true; col += 2; i += 2; continue;
+      inLineComment = true;
+      col += 2;
+      i += 2;
+      continue;
     }
 
     // Block comment
     if (ch === "/" && peek(1) === "*") {
-      inBlockComment = true; col += 2; i += 2; continue;
+      inBlockComment = true;
+      col += 2;
+      i += 2;
+      continue;
     }
 
     // Dollar quote
@@ -1676,24 +1852,32 @@ function validateSQLSyntax(sql) {
       var tag = readDollarTag();
       if (tag !== null) {
         inDollarQuote = true;
-        dollarTag  = tag;
-        dollarRow  = row; dollarCol = col;
-        col += tag.length; i += tag.length; continue;
+        dollarTag = tag;
+        dollarRow = row;
+        dollarCol = col;
+        col += tag.length;
+        i += tag.length;
+        continue;
       }
     }
 
     // Single / double quoted string
     if (ch === "'" || ch === '"') {
-      inString    = true;
-      stringChar  = ch;
-      stringRow   = row; stringCol = col;
-      col++; i++; continue;
+      inString = true;
+      stringChar = ch;
+      stringRow = row;
+      stringCol = col;
+      col++;
+      i++;
+      continue;
     }
 
     // Parentheses
     if (ch === "(") {
       parenStack.push({ row: row, col: col });
-      col++; i++; continue;
+      col++;
+      i++;
+      continue;
     }
     if (ch === ")") {
       if (parenStack.length === 0) {
@@ -1701,27 +1885,44 @@ function validateSQLSyntax(sql) {
       } else {
         parenStack.pop();
       }
-      col++; i++; continue;
+      col++;
+      i++;
+      continue;
     }
 
-    if (ch === "\n") { row++; col = 0; } else { col++; }
+    if (ch === "\n") {
+      row++;
+      col = 0;
+    } else {
+      col++;
+    }
     i++;
   }
 
   // Unclosed constructs
   if (inString) {
-    errors.push({ row: stringRow, col: stringCol,
-                  message: "Unterminated string literal" });
+    errors.push({
+      row: stringRow,
+      col: stringCol,
+      message: "Unterminated string literal",
+    });
   }
   if (inDollarQuote) {
-    errors.push({ row: dollarRow, col: dollarCol,
-                  message: "Unterminated dollar-quoted string (" + dollarTag + ")" });
+    errors.push({
+      row: dollarRow,
+      col: dollarCol,
+      message: "Unterminated dollar-quoted string (" + dollarTag + ")",
+    });
   }
   if (inBlockComment) {
     errors.push({ row: 0, col: 0, message: "Unterminated block comment" });
   }
   parenStack.forEach(function (p) {
-    errors.push({ row: p.row, col: p.col, message: "Unclosed parenthesis '('" });
+    errors.push({
+      row: p.row,
+      col: p.col,
+      message: "Unclosed parenthesis '('",
+    });
   });
 
   return errors;
@@ -1738,10 +1939,17 @@ function setValidationError(message, pos) {
   var annotations = [];
   if (pos > 0) {
     var rc = charPosToRowCol(editor.getValue(), pos);
-    annotations.push({ row: rc.row, column: rc.col, text: message, type: "error" });
+    annotations.push({
+      row: rc.row,
+      column: rc.col,
+      text: message,
+      type: "error",
+    });
   }
   editor.session.setAnnotations(annotations);
-  $("#validation-status").text("\u26a0 " + message).show();
+  $("#validation-status")
+    .text("\u26a0 " + message)
+    .show();
 }
 
 function clearValidationState() {
@@ -1781,10 +1989,14 @@ function scheduleValidation() {
   // Tier-1: instant client-side structural check
   var clientErrors = validateSQLSyntax(sql);
   if (clientErrors.length > 0) {
-    editor.session.setAnnotations(clientErrors.map(function (e) {
-      return { row: e.row, column: e.col, text: e.message, type: "error" };
-    }));
-    $("#validation-status").text("\u26a0 " + clientErrors[0].message).show();
+    editor.session.setAnnotations(
+      clientErrors.map(function (e) {
+        return { row: e.row, column: e.col, text: e.message, type: "error" };
+      }),
+    );
+    $("#validation-status")
+      .text("\u26a0 " + clientErrors[0].message)
+      .show();
   }
 
   // Tier-2: server-side PostgreSQL parse (authoritative, replaces tier-1 result)
@@ -1987,7 +2199,8 @@ function fetchColumnsForTable(table, cb) {
 
 function extractReferencedTables(sql) {
   var tables = [];
-  var re = /\b(?:FROM|JOIN)\s+([a-zA-Z_][a-zA-Z0-9_]*(?:\.[a-zA-Z_][a-zA-Z0-9_]*)?)/gi;
+  var re =
+    /\b(?:FROM|JOIN)\s+([a-zA-Z_][a-zA-Z0-9_]*(?:\.[a-zA-Z_][a-zA-Z0-9_]*)?)/gi;
   var match;
   while ((match = re.exec(sql)) !== null) {
     var name = match[1].split(".").pop();
@@ -2029,8 +2242,8 @@ var objectAutocompleter = {
 };
 
 function saveQueryTabs() {
-  localStorage.setItem("pgweb_query_tabs", JSON.stringify(queryTabs));
-  localStorage.setItem("pgweb_active_tab", activeTabId);
+  localStorage.setItem("pgport_query_tabs", JSON.stringify(queryTabs));
+  localStorage.setItem("pgport_active_tab", activeTabId);
 }
 
 function getActiveTab() {
@@ -2121,8 +2334,8 @@ function closeQueryTab(id) {
 }
 
 function initQueryTabs() {
-  var stored = localStorage.getItem("pgweb_query_tabs");
-  var storedActive = localStorage.getItem("pgweb_active_tab");
+  var stored = localStorage.getItem("pgport_query_tabs");
+  var storedActive = localStorage.getItem("pgport_active_tab");
 
   if (stored) {
     try {
@@ -2133,7 +2346,7 @@ function initQueryTabs() {
   }
 
   if (!queryTabs || queryTabs.length === 0) {
-    var oldQuery = localStorage.getItem("pgweb_query") || "";
+    var oldQuery = localStorage.getItem("pgport_query") || "";
     queryTabs = [{ id: "tab_1", name: "Query 1", query: oldQuery }];
     storedActive = "tab_1";
   }
@@ -2497,7 +2710,7 @@ function bindTableHeaderMenu() {
               }
               closeRowSidebar();
               showPaginatedTableContent();
-            }
+            },
           );
           break;
       }
@@ -2734,7 +2947,10 @@ function initHistoryFinder() {
     if (!query) return escapeHtml(text);
     var escaped = escapeHtml(text);
     var escapedQ = escapeHtml(query).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-    return escaped.replace(new RegExp("(" + escapedQ + ")", "gi"), "<em>$1</em>");
+    return escaped.replace(
+      new RegExp("(" + escapedQ + ")", "gi"),
+      "<em>$1</em>",
+    );
   }
 
   function updateHistoryActive() {
@@ -2748,8 +2964,10 @@ function initHistoryFinder() {
       if (el && container) {
         var elBottom = el.offsetTop + el.offsetHeight;
         var contBottom = container.scrollTop + container.clientHeight;
-        if (elBottom > contBottom) container.scrollTop = elBottom - container.clientHeight;
-        else if (el.offsetTop < container.scrollTop) container.scrollTop = el.offsetTop;
+        if (elBottom > contBottom)
+          container.scrollTop = elBottom - container.clientHeight;
+        else if (el.offsetTop < container.scrollTop)
+          container.scrollTop = el.offsetTop;
       }
     }
   }
@@ -2758,9 +2976,11 @@ function initHistoryFinder() {
     var q = (query || "").toLowerCase().trim();
     historyFiltered = !q
       ? historyData.slice(0, 100)
-      : historyData.filter(function (h) {
-          return h.query.toLowerCase().indexOf(q) !== -1;
-        }).slice(0, 100);
+      : historyData
+          .filter(function (h) {
+            return h.query.toLowerCase().indexOf(q) !== -1;
+          })
+          .slice(0, 100);
 
     var $list = $("#history_results");
     $list.empty();
@@ -2772,16 +2992,21 @@ function initHistoryFinder() {
 
     historyFiltered.forEach(function (h, idx) {
       var preview = h.query.replace(/\s+/g, " ").trim();
-      var display = preview.length > 90 ? preview.slice(0, 90) + "\u2026" : preview;
+      var display =
+        preview.length > 90 ? preview.slice(0, 90) + "\u2026" : preview;
       var ts = h.timestamp
         ? '<span class="history-item-ts">' + escapeHtml(h.timestamp) + "</span>"
         : "";
       $list.append(
-        '<li data-idx="' + idx + '">' +
+        '<li data-idx="' +
+          idx +
+          '">' +
           '<i class="fa fa-history history-item-icon"></i>' +
-          '<span class="history-item-query">' + highlightMatch(display, q) + "</span>" +
+          '<span class="history-item-query">' +
+          highlightMatch(display, q) +
+          "</span>" +
           ts +
-        "</li>"
+          "</li>",
       );
     });
 
@@ -2837,7 +3062,10 @@ function initHistoryFinder() {
       closeHistoryFinder();
     } else if (e.key === "ArrowDown") {
       e.preventDefault();
-      historyActiveIdx = Math.min(historyActiveIdx + 1, historyFiltered.length - 1);
+      historyActiveIdx = Math.min(
+        historyActiveIdx + 1,
+        historyFiltered.length - 1,
+      );
       updateHistoryActive();
     } else if (e.key === "ArrowUp") {
       e.preventDefault();
@@ -2866,14 +3094,15 @@ function initHistoryFinder() {
   $("#history_overlay").on("click", closeHistoryFinder);
 }
 
-var FAVORITES_KEY = "pgweb_favorite_queries";
-var SETTINGS_KEY  = "pgweb_app_settings";
+var FAVORITES_KEY = "pgport_favorite_queries";
+var SETTINGS_KEY = "pgport_app_settings";
 
 function loadSettings() {
   try {
     var saved = JSON.parse(localStorage.getItem(SETTINGS_KEY) || "{}");
-    if (typeof saved.vimMode === "boolean")          appSettings.vimMode          = saved.vimMode;
-    if (typeof saved.syntaxValidation === "boolean") appSettings.syntaxValidation = saved.syntaxValidation;
+    if (typeof saved.vimMode === "boolean") appSettings.vimMode = saved.vimMode;
+    if (typeof saved.syntaxValidation === "boolean")
+      appSettings.syntaxValidation = saved.syntaxValidation;
   } catch (e) {}
 }
 
@@ -2883,8 +3112,11 @@ function persistSetting(key, value) {
 }
 
 function getFavorites() {
-  try { return JSON.parse(localStorage.getItem(FAVORITES_KEY) || "[]"); }
-  catch (e) { return []; }
+  try {
+    return JSON.parse(localStorage.getItem(FAVORITES_KEY) || "[]");
+  } catch (e) {
+    return [];
+  }
 }
 
 function saveFavorites(list) {
@@ -2899,7 +3131,10 @@ function initFavoritesFinder() {
     if (!query) return escapeHtml(text);
     var escaped = escapeHtml(text);
     var escapedQ = escapeHtml(query).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-    return escaped.replace(new RegExp("(" + escapedQ + ")", "gi"), "<em>$1</em>");
+    return escaped.replace(
+      new RegExp("(" + escapedQ + ")", "gi"),
+      "<em>$1</em>",
+    );
   }
 
   function updateFavActive() {
@@ -2913,8 +3148,10 @@ function initFavoritesFinder() {
       if (el && container) {
         var elBottom = el.offsetTop + el.offsetHeight;
         var contBottom = container.scrollTop + container.clientHeight;
-        if (elBottom > contBottom) container.scrollTop = elBottom - container.clientHeight;
-        else if (el.offsetTop < container.scrollTop) container.scrollTop = el.offsetTop;
+        if (elBottom > contBottom)
+          container.scrollTop = elBottom - container.clientHeight;
+        else if (el.offsetTop < container.scrollTop)
+          container.scrollTop = el.offsetTop;
       }
     }
   }
@@ -2925,8 +3162,10 @@ function initFavoritesFinder() {
     favFiltered = !q
       ? all
       : all.filter(function (f) {
-          return f.name.toLowerCase().indexOf(q) !== -1 ||
-                 f.query.toLowerCase().indexOf(q) !== -1;
+          return (
+            f.name.toLowerCase().indexOf(q) !== -1 ||
+            f.query.toLowerCase().indexOf(q) !== -1
+          );
         });
 
     var $list = $("#favorites_results");
@@ -2941,12 +3180,20 @@ function initFavoritesFinder() {
       var preview = f.query.replace(/\s+/g, " ").trim();
       var display = preview.length > 70 ? preview.slice(0, 70) + "…" : preview;
       $list.append(
-        '<li data-idx="' + idx + '">' +
+        '<li data-idx="' +
+          idx +
+          '">' +
           '<i class="fa fa-star fav-icon"></i>' +
-          '<span class="fav-name">' + highlightMatch(f.name, q) + "</span>" +
-          '<span class="fav-query">' + highlightMatch(display, q) + "</span>" +
-          '<button class="fav-delete" data-idx="' + idx + '" title="Delete favorite"><i class="fa fa-times"></i></button>' +
-        "</li>"
+          '<span class="fav-name">' +
+          highlightMatch(f.name, q) +
+          "</span>" +
+          '<span class="fav-query">' +
+          highlightMatch(display, q) +
+          "</span>" +
+          '<button class="fav-delete" data-idx="' +
+          idx +
+          '" title="Delete favorite"><i class="fa fa-times"></i></button>' +
+          "</li>",
       );
     });
 
@@ -2967,7 +3214,11 @@ function initFavoritesFinder() {
     var f = favFiltered[idx];
     if (!f) return;
     var all = getFavorites();
-    saveFavorites(all.filter(function (item) { return item.id !== f.id; }));
+    saveFavorites(
+      all.filter(function (item) {
+        return item.id !== f.id;
+      }),
+    );
     favActiveIdx = Math.min(favActiveIdx, favFiltered.length - 2);
     renderFavResults($("#favorites_input").val());
   }
@@ -3047,7 +3298,9 @@ function initFavoritesFinder() {
   editor.commands.addCommand({
     name: "open_favorites",
     bindKey: { win: "Ctrl-Shift-F", mac: "Ctrl-Shift-F" },
-    exec: function () { openFavoritesFinder(); }
+    exec: function () {
+      openFavoritesFinder();
+    },
   });
 
   $("#open-favorites").on("click", openFavoritesFinder);
@@ -3070,7 +3323,7 @@ function initFavoritesFinder() {
       id: Date.now() + "-" + Math.random().toString(36).slice(2, 7),
       name: name,
       query: query,
-      created_at: new Date().toISOString()
+      created_at: new Date().toISOString(),
     });
     saveFavorites(list);
     var $btn = $("#save-favorite");
@@ -3150,37 +3403,51 @@ function initShortcutsModal() {
 function renderFavoritesPanel() {
   var q = ($("#fav-panel-search").val() || "").toLowerCase().trim();
   var all = getFavorites();
-  var filtered = !q ? all : all.filter(function (f) {
-    return f.name.toLowerCase().indexOf(q) !== -1 ||
-           f.query.toLowerCase().indexOf(q) !== -1;
-  });
+  var filtered = !q
+    ? all
+    : all.filter(function (f) {
+        return (
+          f.name.toLowerCase().indexOf(q) !== -1 ||
+          f.query.toLowerCase().indexOf(q) !== -1
+        );
+      });
 
   $(".fav-panel-count").text(all.length > 0 ? "(" + all.length + ")" : "");
   var $list = $("#fav-panel-list");
   $list.empty();
 
   if (filtered.length === 0) {
-    var msg = all.length === 0
-      ? "No favorites saved yet.<br>Run a query and click the <i class=\"fa fa-star-o\"></i> button to save it."
-      : "No matches for &ldquo;" + escapeHtml(q) + "&rdquo;";
-    $list.html('<div class="fav-panel-empty">' + msg + '</div>');
+    var msg =
+      all.length === 0
+        ? 'No favorites saved yet.<br>Run a query and click the <i class="fa fa-star-o"></i> button to save it.'
+        : "No matches for &ldquo;" + escapeHtml(q) + "&rdquo;";
+    $list.html('<div class="fav-panel-empty">' + msg + "</div>");
     return;
   }
 
   filtered.forEach(function (f) {
     var preview = f.query.replace(/\s+/g, " ").trim();
-    var display = preview.length > 120 ? preview.slice(0, 120) + "\u2026" : preview;
+    var display =
+      preview.length > 120 ? preview.slice(0, 120) + "\u2026" : preview;
     $list.append(
-      '<div class="fav-panel-item" data-id="' + escapeHtml(f.id) + '">' +
+      '<div class="fav-panel-item" data-id="' +
+        escapeHtml(f.id) +
+        '">' +
         '<i class="fa fa-star fav-panel-item-icon"></i>' +
         '<div class="fav-panel-item-body">' +
-          '<div class="fav-panel-item-name">' + escapeHtml(f.name) + '</div>' +
-          '<div class="fav-panel-item-query">' + escapeHtml(display) + '</div>' +
-        '</div>' +
-        '<button class="fav-panel-delete" data-id="' + escapeHtml(f.id) + '" title="Delete favorite">' +
-          '<i class="fa fa-trash-o"></i>' +
-        '</button>' +
-      '</div>'
+        '<div class="fav-panel-item-name">' +
+        escapeHtml(f.name) +
+        "</div>" +
+        '<div class="fav-panel-item-query">' +
+        escapeHtml(display) +
+        "</div>" +
+        "</div>" +
+        '<button class="fav-panel-delete" data-id="' +
+        escapeHtml(f.id) +
+        '" title="Delete favorite">' +
+        '<i class="fa fa-trash-o"></i>' +
+        "</button>" +
+        "</div>",
     );
   });
 }
@@ -3203,7 +3470,9 @@ function initFavoritesPanel() {
     if ($(e.target).closest(".fav-panel-delete").length) return;
     var id = $(this).data("id");
     var all = getFavorites();
-    var f = all.filter(function (x) { return x.id === id; })[0];
+    var f = all.filter(function (x) {
+      return x.id === id;
+    })[0];
     if (!f) return;
     editor.setValue(f.query);
     editor.clearSelection();
@@ -3214,7 +3483,11 @@ function initFavoritesPanel() {
   $("#fav-panel-list").on("click", ".fav-panel-delete", function (e) {
     e.stopPropagation();
     var id = $(this).data("id");
-    saveFavorites(getFavorites().filter(function (x) { return x.id !== id; }));
+    saveFavorites(
+      getFavorites().filter(function (x) {
+        return x.id !== id;
+      }),
+    );
     renderFavoritesPanel();
   });
 }
@@ -3227,7 +3500,10 @@ function initSettingsModal() {
   function openSettings() {
     // Sync toggles from current settings
     $("#settings-vim-mode").prop("checked", appSettings.vimMode);
-    $("#settings-syntax-validation").prop("checked", appSettings.syntaxValidation);
+    $("#settings-syntax-validation").prop(
+      "checked",
+      appSettings.syntaxValidation,
+    );
     $("#settings_overlay").show();
     $("#settings_modal").show();
   }
@@ -3277,7 +3553,8 @@ function initSettingsModal() {
   });
 }
 
-function bindDatabaseObjectsFilter() {  var filterTimeout = null;
+function bindDatabaseObjectsFilter() {
+  var filterTimeout = null;
 
   $("#filter_database_objects").on("keyup", function (e) {
     clearTimeout(filterTimeout);
@@ -4131,7 +4408,7 @@ $(document).ready(function () {
     });
   });
 
-  $("#save_connection_checkbox").on("change", function() {
+  $("#save_connection_checkbox").on("change", function () {
     if ($(this).is(":checked")) {
       $(".save-connection-name").show().focus();
     } else {
@@ -4139,18 +4416,18 @@ $(document).ready(function () {
     }
   });
 
-  $("#saved_connections_list").on("click", ".conn-item", function(e) {
+  $("#saved_connections_list").on("click", ".conn-item", function (e) {
     if ($(e.target).hasClass("conn-item-delete")) return;
     loadSavedConnectionIntoForm($(this).data("id"));
   });
 
-  $("#saved_connections_list").on("click", ".conn-item-delete", function(e) {
+  $("#saved_connections_list").on("click", ".conn-item-delete", function (e) {
     e.stopPropagation();
     deleteSavedConnection($(this).data("id"));
     renderSavedConnections();
   });
 
-  $("#recent_connections_list").on("click", ".conn-item", function() {
+  $("#recent_connections_list").on("click", ".conn-item", function () {
     loadRecentConnectionIntoForm($(this).data("id"));
   });
 
