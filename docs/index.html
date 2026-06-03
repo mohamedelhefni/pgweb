@@ -3,11 +3,106 @@
     <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <link rel="icon" type="image/x-icon" href="./img/icon.ico" />
+        <link rel="apple-touch-icon" href="./img/icon.png" />
+
+        <!-- Primary SEO -->
         <meta
             name="description"
-            content="pgport — an alternative of pgweb with keyboard-first navigation, inline cell editing, query tabs, vim mode, dark/light theme, and more."
+            content="pgport is a lightweight, self-hosted PostgreSQL web client with keyboard-first navigation, inline cell editing, row details sidebar, tabbed queries, vim mode, dark/light theme, and more — built on pgweb."
         />
+        <meta
+            name="keywords"
+            content="PostgreSQL, pgweb, pgport, postgres web client, database browser, self-hosted, SQL editor, postgres GUI, open source, database tool"
+        />
+        <meta name="author" content="Mohamed Elhefni" />
+        <meta name="robots" content="index, follow" />
+        <link rel="canonical" href="https://mohamedelhefni.github.io/pgport/" />
+
+        <!-- Open Graph -->
+        <meta property="og:type" content="website" />
+        <meta property="og:site_name" content="pgport" />
+        <meta
+            property="og:title"
+            content="pgport — PostgreSQL web client, enhanced"
+        />
+        <meta
+            property="og:description"
+            content="Lightweight, self-hosted PostgreSQL web client with keyboard-first navigation, inline editing, vim mode, query tabs, and dark/light theme. Built on pgweb, extended with the features it deserved."
+        />
+        <meta
+            property="og:image"
+            content="https://mohamedelhefni.github.io/pgport/img/screenshot.png"
+        />
+        <meta
+            property="og:image:alt"
+            content="pgport PostgreSQL web client — screenshot"
+        />
+        <meta property="og:image:width" content="1740" />
+        <meta property="og:image:height" content="1159" />
+        <meta
+            property="og:url"
+            content="https://mohamedelhefni.github.io/pgport/"
+        />
+
+        <!-- Twitter / X Card -->
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta
+            name="twitter:title"
+            content="pgport — PostgreSQL web client, enhanced"
+        />
+        <meta
+            name="twitter:description"
+            content="Lightweight, self-hosted PostgreSQL web client with keyboard-first navigation, inline editing, vim mode, query tabs, and dark/light theme."
+        />
+        <meta
+            name="twitter:image"
+            content="https://mohamedelhefni.github.io/pgport/img/screenshot.png"
+        />
+        <meta
+            name="twitter:image:alt"
+            content="pgport PostgreSQL web client — screenshot"
+        />
+        <!-- Siraaj Analytics -->
+        <script src="https://siraaj.live/sdk/analytics.umd.min.js"></script>
+        <script>
+            const analytics =
+                SiraajAnalytics.analytics || SiraajAnalytics.default;
+            analytics.init({
+                apiUrl: "https://siraaj.live",
+                projectId: "pgport",
+                autoTrack: true,
+            });
+            analytics.pageView();
+        </script>
         <title>pgport — PostgreSQL web client, enhanced</title>
+
+        <!-- Structured data (JSON-LD) -->
+        <script type="application/ld+json">
+            {
+                "@context": "https://schema.org",
+                "@type": "SoftwareApplication",
+                "name": "pgport",
+                "url": "https://mohamedelhefni.github.io/pgport/",
+                "description": "Lightweight self-hosted PostgreSQL web client with keyboard-first navigation, inline cell editing, row details sidebar, tabbed queries, vim mode, and dark/light theme.",
+                "applicationCategory": "DeveloperApplication",
+                "operatingSystem": "Linux, macOS, Windows",
+                "softwareVersion": "latest",
+                "license": "https://opensource.org/licenses/MIT",
+                "author": {
+                    "@type": "Person",
+                    "name": "Mohamed Elhefni",
+                    "url": "https://github.com/mohamedelhefni"
+                },
+                "codeRepository": "https://github.com/mohamedelhefni/pgport",
+                "offers": {
+                    "@type": "Offer",
+                    "price": "0",
+                    "priceCurrency": "USD"
+                },
+                "image": "https://mohamedelhefni.github.io/pgport/img/screenshot.png"
+            }
+        </script>
         <style>
             *,
             *::before,
@@ -59,11 +154,19 @@
             }
 
             .logo {
+                display: inline-flex;
+                align-items: center;
+                gap: 0.45rem;
                 font-size: 1.05rem;
                 font-weight: 700;
                 letter-spacing: -0.03em;
                 color: var(--text);
                 text-decoration: none;
+            }
+            .logo img {
+                height: 22px;
+                width: auto;
+                display: block;
             }
             .logo em {
                 color: var(--accent);
@@ -580,6 +683,141 @@
                 margin-top: 0.6rem;
             }
 
+            /* ─── ROW DETAILS MOCKUP ──────────────────────────────────── */
+            .row-details-wrap {
+                display: grid;
+                grid-template-columns: 1fr 175px;
+            }
+
+            .row-details-table {
+                overflow-x: auto;
+                border-right: 1px solid var(--border);
+            }
+
+            .rd-selected td {
+                background: var(--accent-dim) !important;
+                color: var(--accent) !important;
+            }
+
+            .row-details-panel {
+                display: flex;
+                flex-direction: column;
+                overflow: hidden;
+            }
+
+            .rdp-header {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                font-size: 0.6rem;
+                font-weight: 700;
+                letter-spacing: 0.1em;
+                text-transform: uppercase;
+                color: var(--muted);
+                padding: 0.5rem 0.6rem 0.4rem;
+                border-bottom: 1px solid var(--border);
+                flex-shrink: 0;
+            }
+
+            .rdp-close {
+                color: var(--muted);
+                font-size: 0.75rem;
+                opacity: 0.5;
+            }
+
+            .rdp-fields {
+                display: flex;
+                flex-direction: column;
+                overflow: hidden;
+            }
+
+            .rdp-field {
+                padding: 0.3rem 0.6rem;
+                border-bottom: 1px solid oklch(17% 0.005 240);
+            }
+
+            .rdp-field:last-child {
+                border-bottom: none;
+            }
+
+            .rdp-label {
+                font-size: 0.55rem;
+                color: var(--muted);
+                margin-bottom: 0.15rem;
+                letter-spacing: 0.02em;
+            }
+
+            .rdp-value {
+                font-size: 0.65rem;
+                color: var(--text);
+                background: var(--surface-2);
+                border: 1px solid var(--border);
+                border-radius: 3px;
+                padding: 0.2rem 0.4rem;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+
+            .rdp-json {
+                color: var(--accent);
+            }
+
+            .rdp-bool {
+                color: var(--green);
+            }
+
+            .rdp-ts {
+                color: var(--amber);
+                font-size: 0.6rem;
+            }
+
+            .rdp-null {
+                color: oklch(36% 0.005 240);
+                font-style: italic;
+            }
+
+            /* Favorites star in sidebar */
+            .fav-star {
+                color: oklch(76% 0.18 80);
+                font-size: 0.65rem;
+                margin-left: 0.2rem;
+            }
+
+            .sidebar-mock {
+                display: flex;
+                flex-direction: column;
+            }
+
+            .sidebar-section-label {
+                font-size: 0.57rem;
+                font-weight: 700;
+                letter-spacing: 0.1em;
+                text-transform: uppercase;
+                color: var(--muted);
+                padding: 0.55rem 0.75rem 0.3rem;
+            }
+
+            .sidebar-item {
+                display: flex;
+                align-items: center;
+                gap: 0.35rem;
+                padding: 0.28rem 0.75rem;
+                font-size: 0.72rem;
+                color: var(--muted);
+                cursor: default;
+            }
+
+            .sidebar-item.active {
+                background: var(--accent-dim);
+                color: var(--accent);
+            }
+
+            .sidebar-item-icon {
+                font-size: 0.6rem;
+                opacity: 0.5;
+            }
+
             /* ─── MINOR FEATURES GRID ─────────────────────────────────── */
             .minor-section {
                 max-width: 1060px;
@@ -605,8 +843,13 @@
                 padding: 1.75rem 1.5rem;
                 border-right: 1px solid var(--border);
             }
-            .minor-item:last-child {
+
+            .minor-item:nth-child(4n) {
                 border-right: none;
+            }
+
+            .minor-item:nth-child(n + 5) {
+                border-top: 1px solid var(--border);
             }
 
             .minor-glyph {
@@ -643,6 +886,213 @@
                 line-height: 1.65;
             }
 
+            /* ─── DOCKER CALLOUT ──────────────────────────────────────────── */
+            .docker-section {
+                max-width: 1060px;
+                margin: 0 auto;
+                padding: 0 2rem 5rem;
+                border-top: 1px solid var(--border);
+            }
+
+            .docker-intro {
+                padding: 3.5rem 0 2.5rem;
+            }
+
+            .docker-card {
+                display: flex;
+                align-items: center;
+                gap: 2.5rem;
+                border: 1px solid var(--border);
+                border-radius: 8px;
+                background: var(--surface);
+                padding: 1.75rem 2rem;
+            }
+
+            .docker-icon-col {
+                font-family: "JetBrains Mono", "Fira Code", Consolas, monospace;
+                font-size: 0.82rem;
+                color: var(--accent);
+                flex-shrink: 0;
+                line-height: 1.6;
+                text-align: center;
+                padding-right: 2.5rem;
+                border-right: 1px solid var(--border);
+            }
+
+            .docker-icon-sub {
+                color: var(--muted);
+                font-size: 0.65rem;
+                margin-top: 0.25rem;
+            }
+
+            .docker-body {
+                flex: 1;
+            }
+
+            .docker-stat-row {
+                display: flex;
+                align-items: center;
+                gap: 0.85rem;
+                margin-bottom: 0.65rem;
+                flex-wrap: wrap;
+            }
+
+            .size-before {
+                font-size: 1.45rem;
+                font-weight: 800;
+                letter-spacing: -0.03em;
+                color: oklch(36% 0.005 240);
+                text-decoration: line-through;
+                text-decoration-color: oklch(36% 0.005 240);
+            }
+
+            .size-arrow {
+                color: var(--accent);
+                font-size: 1.1rem;
+                font-weight: 300;
+            }
+
+            .size-after {
+                font-size: 1.45rem;
+                font-weight: 800;
+                letter-spacing: -0.03em;
+                color: var(--text);
+            }
+
+            .size-badge {
+                font-size: 0.68rem;
+                font-weight: 700;
+                letter-spacing: 0.05em;
+                color: var(--accent);
+                background: var(--accent-dim);
+                border: 1px solid oklch(30% 0.06 175);
+                padding: 0.2rem 0.5rem;
+                border-radius: 4px;
+            }
+
+            .docker-desc {
+                font-size: 0.85rem;
+                color: var(--muted);
+                max-width: 520px;
+            }
+
+            /* ─── COMPARISON TABLE ────────────────────────────────────────── */
+            .compare-section {
+                max-width: 1060px;
+                margin: 0 auto;
+                padding: 0 2rem 5.5rem;
+                border-top: 1px solid var(--border);
+            }
+
+            .compare-intro {
+                padding: 3.5rem 0 2.5rem;
+            }
+
+            .compare-wrap {
+                border: 1px solid var(--border);
+                border-radius: 8px;
+                overflow: hidden;
+                overflow-x: auto;
+            }
+
+            .cmp-table {
+                width: 100%;
+                border-collapse: collapse;
+                font-size: 0.875rem;
+                min-width: 480px;
+            }
+
+            .cmp-table thead th {
+                padding: 0.8rem 1.5rem;
+                font-size: 0.68rem;
+                font-weight: 700;
+                letter-spacing: 0.1em;
+                text-transform: uppercase;
+                border-bottom: 1px solid var(--border);
+                background: var(--surface-2);
+                color: var(--muted);
+            }
+
+            .cmp-table thead th.col-center {
+                text-align: center;
+            }
+
+            .cmp-table thead th.col-port-hd {
+                text-align: center;
+                color: var(--accent);
+                background: var(--accent-dim);
+            }
+
+            .cmp-table tbody tr {
+                border-bottom: 1px solid var(--border);
+                transition: background 0.08s;
+            }
+
+            .cmp-table tbody tr:last-child {
+                border-bottom: none;
+            }
+
+            .cmp-table tbody tr:hover {
+                background: var(--surface);
+            }
+
+            .cmp-table td {
+                padding: 0.7rem 1.5rem;
+            }
+
+            .cmp-table td.col-feat {
+                color: var(--text);
+                font-size: 0.875rem;
+            }
+
+            .cmp-table td.col-pgweb {
+                text-align: center;
+            }
+
+            .cmp-table td.col-port {
+                text-align: center;
+                background: oklch(13% 0.012 175);
+            }
+
+            .cmp-yes {
+                color: var(--green);
+                font-weight: 700;
+                font-size: 1rem;
+            }
+
+            .cmp-no {
+                color: oklch(34% 0.005 240);
+                font-size: 0.95rem;
+                font-weight: 600;
+            }
+
+            .cmp-partial {
+                display: inline-block;
+                font-size: 0.68rem;
+                font-weight: 700;
+                letter-spacing: 0.04em;
+                color: var(--amber);
+                background: oklch(18% 0.06 75);
+                border: 1px solid oklch(28% 0.08 75);
+                padding: 0.15rem 0.4rem;
+                border-radius: 3px;
+                white-space: nowrap;
+            }
+
+            .cmp-size-before {
+                font-size: 0.8rem;
+                font-weight: 600;
+                color: oklch(36% 0.005 240);
+                text-decoration: line-through;
+                text-decoration-color: oklch(36% 0.005 240);
+            }
+
+            .cmp-size-after {
+                font-size: 0.8rem;
+                font-weight: 700;
+                color: var(--accent);
+            }
+
             /* ─── FOOTER ──────────────────────────────────────────────── */
             .footer-wrap {
                 border-top: 1px solid var(--border);
@@ -658,6 +1108,10 @@
 
             .footer-left .logo {
                 font-size: 0.95rem;
+            }
+
+            .footer-left .logo img {
+                height: 19px;
             }
 
             .footer-attribution {
@@ -689,6 +1143,62 @@
                 color: var(--text);
             }
 
+            /* ─── APP PREVIEW ────────────────────────────────────────── */
+            .app-preview {
+                max-width: 1060px;
+                margin: 0 auto;
+                padding: 4rem 2rem 0;
+            }
+
+            .app-preview-frame {
+                border: 1px solid var(--border);
+                border-radius: 10px;
+                overflow: hidden;
+                box-shadow:
+                    0 0 0 1px oklch(14% 0.005 240),
+                    0 24px 64px -12px oklch(5% 0.01 240 / 0.7);
+            }
+
+            .app-preview-bar {
+                display: flex;
+                align-items: center;
+                gap: 0.45rem;
+                padding: 0.65rem 0.9rem;
+                background: var(--surface-2);
+                border-bottom: 1px solid var(--border);
+            }
+
+            .app-preview img {
+                display: block;
+                width: 100%;
+                height: auto;
+            }
+
+            /* ─── DOCKER CMD ──────────────────────────────────────────── */
+            .docker-cmd {
+                display: flex;
+                align-items: center;
+                gap: 0.75rem;
+                background: var(--code-bg);
+                border: 1px solid var(--border);
+                border-radius: 7px;
+                padding: 0.6rem 1rem;
+                font-family:
+                    "JetBrains Mono", "Fira Code", "Cascadia Code", Consolas,
+                    monospace;
+                font-size: 0.8rem;
+                color: var(--text);
+                margin-top: 1rem;
+                overflow-x: auto;
+                white-space: nowrap;
+            }
+
+            .docker-cmd .prompt {
+                color: var(--accent);
+                user-select: none;
+                flex-shrink: 0;
+            }
+
             /* ─── RESPONSIVE ──────────────────────────────────────────── */
             @media (max-width: 800px) {
                 .feature-row {
@@ -704,16 +1214,38 @@
                     border-bottom: 1px solid var(--border);
                 }
                 .minor-item:nth-child(odd) {
-                    border-right: 1px solid var(--border);
+                    border-right: 1px solid var(--border) !important;
                 }
                 .minor-item:last-child {
                     border-bottom: none;
+                }
+                .minor-item:nth-child(4n) {
+                    border-right: none;
                 }
                 nav {
                     padding: 1rem 1.25rem;
                 }
                 .hero {
                     padding: 3.5rem 1.25rem 3rem;
+                }
+                .docker-card {
+                    flex-direction: column;
+                    align-items: flex-start;
+                    gap: 1.25rem;
+                }
+                .docker-icon-col {
+                    border-right: none;
+                    padding-right: 0;
+                    border-bottom: 1px solid var(--border);
+                    padding-bottom: 1.25rem;
+                    width: 100%;
+                }
+                .row-details-wrap {
+                    grid-template-columns: 1fr;
+                }
+                .row-details-panel {
+                    border-top: 1px solid var(--border);
+                    border-right: none;
                 }
             }
 
@@ -740,7 +1272,10 @@
     <body>
         <!-- NAV -->
         <nav>
-            <a href="#" class="logo">pg<em>port</em></a>
+            <a href="#" class="logo">
+                <img src="./img/icon.png" alt="pgport" />
+                pg<em>port</em>
+            </a>
             <div class="nav-links">
                 <a href="#features" class="nav-link">Features</a>
                 <a
@@ -757,10 +1292,17 @@
                 PostgreSQL in the browser.<br />With the features it deserved.
             </h1>
             <p class="hero-sub">
-                <a href="#" class="logo">pg<em>port</em></a> the lightweight
-                self-hosted PostgreSQL web client — extended with keyboard-first
-                navigation, inline data editing, tabbed queries, vim mode, and
-                more.
+                <a
+                    href="#"
+                    class="logo"
+                    style="display: inline-flex; vertical-align: middle"
+                >
+                    <img src="./img/icon.png" alt="" aria-hidden="true" />
+                    pg<em>port</em>
+                </a>
+                the lightweight self-hosted PostgreSQL web client — extended
+                with keyboard-first navigation, inline data editing, row details
+                sidebar, tabbed queries, vim mode, and more.
             </p>
             <div class="install-cmd">
                 <span class="prompt">$</span>
@@ -778,11 +1320,26 @@
             </div>
         </section>
 
+        <!-- APP PREVIEW -->
+        <div class="app-preview">
+            <div class="app-preview-frame">
+                <div class="app-preview-bar">
+                    <div class="dot dot-r"></div>
+                    <div class="dot dot-y"></div>
+                    <div class="dot dot-g"></div>
+                </div>
+                <img
+                    src="./img/screenshot.png"
+                    alt="pgport — row details sidebar open on the banks table, showing per-field values with JSON formatting"
+                />
+            </div>
+        </div>
+
         <!-- FEATURES INTRO -->
         <div class="section-intro" id="features">
             <div class="section-label">What's new in pgport</div>
             <h2 class="section-heading">
-                Eight additions. Zero new dependencies.
+                Thirteen additions. Zero new dependencies.
             </h2>
             <p class="section-desc">
                 Every feature was built to stay out of the way: keyboard-native,
@@ -1036,11 +1593,129 @@
             </div>
         </div>
 
+        <!-- FEATURE 4: ROW DETAILS SIDEBAR + FAVORITES -->
+        <div class="feature-row flip">
+            <div>
+                <div class="feat-tag">Data Exploration</div>
+                <h3 class="feat-title">Row Details. Favorites.</h3>
+                <p class="feat-body">
+                    Click any row to open a persistent detail panel on the
+                    right. Each field gets its own labeled slot — JSON values
+                    render formatted, timestamps stay readable, booleans show
+                    clearly. Star any table to pin it to your Favorites list for
+                    one-click access.
+                </p>
+                <div class="detail-list">
+                    <div class="detail-item">
+                        Non-modal: the panel stays open while you browse other
+                        rows
+                    </div>
+                    <div class="detail-item">
+                        Field values rendered per type: JSON, boolean,
+                        timestamp, null
+                    </div>
+                    <div class="detail-item">
+                        Favorites pinned above the table list in the connection
+                        sidebar
+                    </div>
+                </div>
+            </div>
+            <div class="mockup">
+                <div class="mockup-bar">
+                    <div class="dot dot-r"></div>
+                    <div class="dot dot-y"></div>
+                    <div class="dot dot-g"></div>
+                </div>
+                <div class="row-details-wrap">
+                    <div class="row-details-table">
+                        <table class="mock-table" style="font-size: 0.67rem">
+                            <thead>
+                                <tr>
+                                    <th>id</th>
+                                    <th>code</th>
+                                    <th>name</th>
+                                    <th>active</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>1</td>
+                                    <td>50</td>
+                                    <td>SAB Bank</td>
+                                    <td>true</td>
+                                </tr>
+                                <tr class="rd-selected">
+                                    <td>2</td>
+                                    <td>15</td>
+                                    <td>AlBilad</td>
+                                    <td>true</td>
+                                </tr>
+                                <tr>
+                                    <td>3</td>
+                                    <td>80</td>
+                                    <td>Al Rajhi</td>
+                                    <td>true</td>
+                                </tr>
+                                <tr>
+                                    <td>4</td>
+                                    <td>30</td>
+                                    <td>Arab Natl</td>
+                                    <td>true</td>
+                                </tr>
+                                <tr>
+                                    <td>5</td>
+                                    <td>70</td>
+                                    <td>Kuwait Fin</td>
+                                    <td>true</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="row-details-panel">
+                        <div class="rdp-header">
+                            Row Details
+                            <span class="rdp-close">✕</span>
+                        </div>
+                        <div class="rdp-fields">
+                            <div class="rdp-field">
+                                <div class="rdp-label">id</div>
+                                <div class="rdp-value">2</div>
+                            </div>
+                            <div class="rdp-field">
+                                <div class="rdp-label">code</div>
+                                <div class="rdp-value">15</div>
+                            </div>
+                            <div class="rdp-field">
+                                <div class="rdp-label">name</div>
+                                <div class="rdp-value rdp-json">
+                                    {"en": "AlBilad Bank"}
+                                </div>
+                            </div>
+                            <div class="rdp-field">
+                                <div class="rdp-label">is_active</div>
+                                <div class="rdp-value rdp-bool">true</div>
+                            </div>
+                            <div class="rdp-field">
+                                <div class="rdp-label">created_at</div>
+                                <div class="rdp-value rdp-ts">
+                                    2026-05-21T12:16:38Z
+                                </div>
+                            </div>
+                            <div class="rdp-field">
+                                <div class="rdp-label">logo_media_id</div>
+                                <div class="rdp-value rdp-null">null</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- MINOR FEATURES -->
         <div class="minor-section">
             <div class="minor-intro">
                 <div class="section-label">Also included</div>
-                <h2 class="section-heading">Four more additions</h2>
+                <h2 class="section-heading">Eight more additions</h2>
             </div>
             <div class="minor-grid">
                 <div class="minor-item">
@@ -1075,13 +1750,285 @@
                         table, without writing SQL.
                     </div>
                 </div>
+                <div class="minor-item">
+                    <div class="minor-glyph">[ace]</div>
+                    <div class="minor-name">Ace Editor Content View</div>
+                    <div class="minor-desc">
+                        Content modal uses Ace for syntax-highlighted view and
+                        edit. SQL formatter and live syntax validation built in.
+                    </div>
+                </div>
+                <div class="minor-item">
+                    <div class="minor-glyph">[⇥ col]</div>
+                    <div class="minor-name">SQL Autocomplete</div>
+                    <div class="minor-desc">
+                        Table and column name suggestions in the query editor.
+                        Completions update when you switch connections.
+                    </div>
+                </div>
+                <div class="minor-item">
+                    <div class="minor-glyph">[≡ db]</div>
+                    <div class="minor-name">Connection Sidebar</div>
+                    <div class="minor-desc">
+                        A persistent sidebar for switching between open
+                        connections. Favorites appear at the top for instant
+                        access.
+                    </div>
+                </div>
+                <div class="minor-item">
+                    <div class="minor-glyph">[◷ ⌨]</div>
+                    <div class="minor-name">History &amp; Shortcuts</div>
+                    <div class="minor-desc">
+                        Fuzzy-search your full query history with
+                        <code
+                            style="
+                                font-family: monospace;
+                                font-size: 0.75em;
+                                color: var(--accent);
+                                background: var(--accent-dim);
+                                padding: 0.05em 0.3em;
+                                border-radius: 3px;
+                            "
+                            >Ctrl+H</code
+                        >. Open the shortcuts reference with
+                        <code
+                            style="
+                                font-family: monospace;
+                                font-size: 0.75em;
+                                color: var(--accent);
+                                background: var(--accent-dim);
+                                padding: 0.05em 0.3em;
+                                border-radius: 3px;
+                            "
+                            >?</code
+                        >.
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- DOCKER IMAGE SIZE -->
+        <div class="docker-section">
+            <div class="docker-intro">
+                <div class="section-label">Infrastructure</div>
+                <h2 class="section-heading">Smaller by default.</h2>
+                <p class="section-desc">
+                    Minimal Docker base image ships nothing but the binary and
+                    embedded assets.
+                </p>
+            </div>
+            <div class="docker-card">
+                <div class="docker-icon-col">
+                    <div>[ docker ]</div>
+                    <div class="docker-icon-sub">image size</div>
+                </div>
+                <div class="docker-body">
+                    <div class="feat-tag">Docker Image</div>
+                    <div class="docker-stat-row">
+                        <span class="size-before">224 MB</span>
+                        <span class="size-arrow">→</span>
+                        <span class="size-after">25 MB</span>
+                        <span class="size-badge">9× smaller</span>
+                    </div>
+                    <div class="docker-desc">
+                        Switched to a minimal base image. No shell, no extra
+                        runtime — just the Go binary and embedded static assets.
+                    </div>
+                    <div class="docker-cmd">
+                        <span class="prompt">$</span>
+                        <span
+                            >docker run --rm -p 8081:8081 -it
+                            mohamedelhefni/pgport</span
+                        >
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- COMPARISON TABLE -->
+        <div class="compare-section">
+            <div class="compare-intro">
+                <div class="section-label">pgweb vs pgport</div>
+                <h2 class="section-heading">What's different.</h2>
+                <p class="section-desc">
+                    Full feature delta against upstream pgweb.
+                </p>
+            </div>
+            <div class="compare-wrap">
+                <table class="cmp-table">
+                    <thead>
+                        <tr>
+                            <th>Feature</th>
+                            <th class="col-center">pgweb</th>
+                            <th class="col-port-hd">pgport</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td class="col-feat">Query tabs</td>
+                            <td class="col-pgweb">
+                                <span class="cmp-no">✗</span>
+                            </td>
+                            <td class="col-port">
+                                <span class="cmp-yes">✓</span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="col-feat">Command palette</td>
+                            <td class="col-pgweb">
+                                <span class="cmp-no">✗</span>
+                            </td>
+                            <td class="col-port">
+                                <span class="cmp-yes">✓</span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="col-feat">Inline row editing</td>
+                            <td class="col-pgweb">
+                                <span class="cmp-no">✗</span>
+                            </td>
+                            <td class="col-port">
+                                <span class="cmp-yes">✓</span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="col-feat">Add row UI</td>
+                            <td class="col-pgweb">
+                                <span class="cmp-no">✗</span>
+                            </td>
+                            <td class="col-port">
+                                <span class="cmp-yes">✓</span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="col-feat">Row details sidebar</td>
+                            <td class="col-pgweb">
+                                <span class="cmp-no">✗</span>
+                            </td>
+                            <td class="col-port">
+                                <span class="cmp-yes">✓</span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="col-feat">Favorites</td>
+                            <td class="col-pgweb">
+                                <span class="cmp-no">✗</span>
+                            </td>
+                            <td class="col-port">
+                                <span class="cmp-yes">✓</span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="col-feat">Expandable schema browser</td>
+                            <td class="col-pgweb">
+                                <span class="cmp-partial">Basic</span>
+                            </td>
+                            <td class="col-port">
+                                <span class="cmp-yes">✓</span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="col-feat">JSON formatting</td>
+                            <td class="col-pgweb">
+                                <span class="cmp-partial">Limited</span>
+                            </td>
+                            <td class="col-port">
+                                <span class="cmp-yes">✓</span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="col-feat">Ace editor content view</td>
+                            <td class="col-pgweb">
+                                <span class="cmp-no">✗</span>
+                            </td>
+                            <td class="col-port">
+                                <span class="cmp-yes">✓</span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="col-feat">SQL formatter + validation</td>
+                            <td class="col-pgweb">
+                                <span class="cmp-no">✗</span>
+                            </td>
+                            <td class="col-port">
+                                <span class="cmp-yes">✓</span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="col-feat">SQL autocomplete (columns)</td>
+                            <td class="col-pgweb">
+                                <span class="cmp-no">✗</span>
+                            </td>
+                            <td class="col-port">
+                                <span class="cmp-yes">✓</span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="col-feat">Connection sidebar</td>
+                            <td class="col-pgweb">
+                                <span class="cmp-no">✗</span>
+                            </td>
+                            <td class="col-port">
+                                <span class="cmp-yes">✓</span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="col-feat">Query history search</td>
+                            <td class="col-pgweb">
+                                <span class="cmp-no">✗</span>
+                            </td>
+                            <td class="col-port">
+                                <span class="cmp-yes">✓</span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="col-feat">Vim mode</td>
+                            <td class="col-pgweb">
+                                <span class="cmp-no">✗</span>
+                            </td>
+                            <td class="col-port">
+                                <span class="cmp-yes">✓</span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="col-feat">Theme persistence</td>
+                            <td class="col-pgweb">
+                                <span class="cmp-no">✗</span>
+                            </td>
+                            <td class="col-port">
+                                <span class="cmp-yes">✓</span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="col-feat">Keyboard-first navigation</td>
+                            <td class="col-pgweb">
+                                <span class="cmp-partial">Limited</span>
+                            </td>
+                            <td class="col-port">
+                                <span class="cmp-yes">✓</span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="col-feat">Docker image size</td>
+                            <td class="col-pgweb">
+                                <span class="cmp-size-before">224 MB</span>
+                            </td>
+                            <td class="col-port">
+                                <span class="cmp-size-after">25 MB</span>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
             </div>
         </div>
 
         <!-- FOOTER -->
         <footer class="footer-wrap">
             <div class="footer-left">
-                <a href="#" class="logo">pg<em>port</em></a>
+                <a href="#" class="logo">
+                    <img src="./img/icon.png" alt="pgport" />
+                    pg<em>port</em>
+                </a>
                 <div class="footer-attribution">
                     Fork of
                     <a href="https://github.com/sosedoff/pgweb">pgweb</a> by
