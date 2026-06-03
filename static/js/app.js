@@ -386,6 +386,7 @@ function loadSchemas() {
       // Clear out all autocomplete objects
       autocompleteObjects = [];
       finderObjects = [];
+      columnCache = {};
       for (schema in data) {
         for (kind in data[schema]) {
           if (
@@ -1440,9 +1441,71 @@ function buildTableFilters(name, type) {
   });
 }
 
+var columnCache = {};
+
+function fetchColumnsForTable(table, cb) {
+  if (columnCache[table] !== undefined) {
+    cb(columnCache[table]);
+    return;
+  }
+  columnCache[table] = [];
+  getTableStructure(table, {}, function (data) {
+    if (data && !data.error && data.columns) {
+      var colNameIdx = data.columns.indexOf("column_name");
+      var dataTypeIdx = data.columns.indexOf("data_type");
+      columnCache[table] = (data.rows || []).map(function (row) {
+        return {
+          caption: row[colNameIdx],
+          value: row[colNameIdx],
+          meta: row[dataTypeIdx] || "column",
+          score: 900,
+        };
+      });
+    }
+    cb(columnCache[table]);
+  });
+}
+
+function extractReferencedTables(sql) {
+  var tables = [];
+  var re = /\b(?:FROM|JOIN)\s+([a-zA-Z_][a-zA-Z0-9_]*(?:\.[a-zA-Z_][a-zA-Z0-9_]*)?)/gi;
+  var match;
+  while ((match = re.exec(sql)) !== null) {
+    var name = match[1].split(".").pop();
+    if (tables.indexOf(name) === -1) tables.push(name);
+  }
+  return tables;
+}
+
 var objectAutocompleter = {
   getCompletions: function (editor, session, pos, prefix, callback) {
-    callback(null, autocompleteObjects);
+    var line = session.getLine(pos.row);
+    var textBefore = line.substring(0, pos.column);
+
+    var dotMatch = textBefore.match(/\b(\w+)\.(\w*)$/);
+    if (dotMatch) {
+      fetchColumnsForTable(dotMatch[1], function (cols) {
+        callback(null, cols);
+      });
+      return;
+    }
+
+    var tables = extractReferencedTables(session.getValue());
+    if (tables.length === 0) {
+      callback(null, autocompleteObjects);
+      return;
+    }
+
+    var pending = tables.length;
+    var extra = [];
+    tables.forEach(function (table) {
+      fetchColumnsForTable(table, function (cols) {
+        extra = extra.concat(cols);
+        if (--pending === 0) {
+          callback(null, autocompleteObjects.concat(extra));
+        }
+      });
+    });
   },
 };
 
