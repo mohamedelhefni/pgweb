@@ -203,6 +203,24 @@
                                 <li id="vim-mode"><a href="#">Vim</a></li>
                             </ul>
                         </div>
+                        <button
+                            id="format-query"
+                            type="button"
+                            class="btn btn-default btn-sm"
+                            title="Format SQL query"
+                        ><i class="fa fa-indent"></i> Format</button>
+                        <button
+                            id="save-favorite"
+                            type="button"
+                            class="btn btn-default btn-sm"
+                            title="Save query as favorite (Ctrl+Shift+S)"
+                        ><i class="fa fa-star-o"></i></button>
+                        <button
+                            id="open-favorites"
+                            type="button"
+                            class="btn btn-default btn-sm"
+                            title="Browse favorites (Ctrl+Shift+F on all platforms)"
+                        ><i class="fa fa-bookmark-o"></i> Favorites</button>
                         <div
                             id="load-query-dropdown"
                             class="btn-group left"
@@ -416,6 +434,28 @@
             <div id="history_footer">
                 <span><kbd>↑</kbd><kbd>↓</kbd> navigate</span>
                 <span><kbd>↵</kbd> use query</span>
+                <span><kbd>esc</kbd> close</span>
+            </div>
+        </div>
+
+        <div id="favorites_overlay"></div>
+
+        <div id="favorites_modal">
+            <div id="favorites_input_wrap">
+                <i class="fa fa-bookmark-o favorites-search-icon"></i>
+                <input
+                    id="favorites_input"
+                    type="text"
+                    autocomplete="off"
+                    spellcheck="false"
+                    placeholder="Search favorite queries..."
+                />
+            </div>
+            <ul id="favorites_results"></ul>
+            <div id="favorites_footer">
+                <span><kbd>↑</kbd><kbd>↓</kbd> navigate</span>
+                <span><kbd>↵</kbd> use query</span>
+                <span><kbd>Del</kbd> delete</span>
                 <span><kbd>esc</kbd> close</span>
             </div>
         </div>
@@ -827,8 +867,28 @@
                         >Filter Rows By Value</a
                     >
                 </li>
+                <li class="divider"></li>
+                <li>
+                    <a href="#" data-action="delete_row" style="color: var(--error)"
+                        >Delete Row</a
+                    >
+                </li>
             </ul>
         </div>
+        <div id="row_sidebar">
+            <div id="row_sidebar_resize_handle"></div>
+            <div class="row-sidebar-header">
+                Row Details
+                <button id="row_sidebar_close_x" class="btn-icon" title="Close"><i class="fa fa-times"></i></button>
+            </div>
+            <div id="row_sidebar_fields"></div>
+            <div class="row-sidebar-footer">
+                <div id="row_sidebar_error" class="alert alert-danger" style="display:none"></div>
+                <button id="row_sidebar_save" class="btn btn-sm btn-primary">Save</button>
+                <button id="row_sidebar_close_btn" class="btn btn-sm btn-default">Close</button>
+            </div>
+        </div>
+
         <div id="error_banner"></div>
 
         <script>
@@ -840,6 +900,9 @@
                     if (window.editor) window.editor.setTheme(theme);
                     if (window.contentViewEditor) window.contentViewEditor.setTheme(theme);
                     if (window.contentEditEditor) window.contentEditEditor.setTheme(theme);
+                    if (window.rowSidebarEditors) {
+                        window.rowSidebarEditors.forEach(function(ed) { ed.setTheme(theme); });
+                    }
                 }
 
                 function applyTheme(theme) {

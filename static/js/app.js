@@ -13,6 +13,10 @@ var inputResizing = false;
 var inputResizeOffset = null;
 var queryTabs = [];
 var activeTabId = null;
+var rowSidebarEditors = [];
+var rowSidebarCtid = null;
+var rowSidebarTable = null;
+window.rowSidebarEditors = rowSidebarEditors;
 
 var filterOptions = {
   equal: "= 'DATA'",
@@ -633,6 +637,7 @@ function getCurrentObject() {
 }
 
 function resetTable() {
+  closeRowSidebar();
   $("#results_header").html("");
   $("#results_body").html("");
   $("#results_view").html("").hide();
@@ -642,6 +647,202 @@ function resetTable() {
     .removeClass("empty")
     .removeClass("no-crop")
     .show();
+}
+
+function openRowSidebar(tr) {
+  var ctid = $(tr).data("ctid");
+  var table = $("#results").data("table");
+  var mode = $("#results").data("mode");
+
+  if (!ctid || !table || mode !== "browse") {
+    closeRowSidebar();
+    return;
+  }
+
+  rowSidebarCtid = ctid;
+  rowSidebarTable = table;
+
+  rowSidebarEditors.forEach(function (ed) { ed.destroy(); });
+  rowSidebarEditors = [];
+  window.rowSidebarEditors = rowSidebarEditors;
+
+  var theme =
+    localStorage.getItem("pgport_theme") === "light"
+      ? "ace/theme/tomorrow"
+      : "ace/theme/tomorrow_night";
+
+  var fieldsEl = $("#row_sidebar_fields").empty();
+
+  $(tr).find("td").each(function (i) {
+    var colName = $(this).data("col-name");
+    var value = unescapeHtml($(this).find("div").html());
+    if (!colName) return;
+
+    var editorId = "rsf_editor_" + i;
+    var fieldEl = $("<div class='row-sidebar-field'></div>");
+    fieldEl.append("<label title='" + escapeAttr(colName) + "'>" + escapeHtml(colName) + "</label>");
+    fieldEl.append("<div class='row-sidebar-ace' id='" + editorId + "'></div>");
+    fieldEl.append("<div class='ace-field-resize-handle'></div>");
+    fieldsEl.append(fieldEl);
+
+    var ed = ace.edit(editorId);
+    ed.setTheme(theme);
+    ed.setShowPrintMargin(false);
+    ed.setFontSize(12);
+    ed.renderer.setShowGutter(false);
+    ed.setHighlightActiveLine(false);
+    ed.setOption("useWorker", false);
+    ed.getSession().setTabSize(2);
+    ed.getSession().setUseSoftTabs(true);
+
+    var isJson = false;
+    var parsed = tryParseJSON(value);
+    if (parsed !== null) {
+      ed.setValue(JSON.stringify(parsed, null, 2), -1);
+      ed.getSession().setMode("ace/mode/json");
+      isJson = true;
+    } else {
+      ed.setValue(value !== null && value !== undefined ? String(value) : "", -1);
+      ed.getSession().setMode("ace/mode/text");
+    }
+
+    var editorMode = localStorage.getItem("editorMode");
+    if (editorMode) ed.setKeyboardHandler(editorMode);
+
+    ed._colName = colName;
+    ed._isJson = isJson;
+    ed._originalValue = ed.getValue();
+    rowSidebarEditors.push(ed);
+  });
+
+  window.rowSidebarEditors = rowSidebarEditors;
+
+  $("#row_sidebar_error").hide();
+  $("#row_sidebar").addClass("open");
+
+  setTimeout(function () {
+    rowSidebarEditors.forEach(function (ed) {
+      var lineHeight = ed.renderer.lineHeight || 17;
+      var lineCount = ed.getSession().getLength();
+      var minH = ed._isJson ? 120 : 40;
+      var h = Math.min(Math.max(lineCount * lineHeight + 8, minH), 400);
+      $(ed.container).height(h);
+      ed.resize();
+    });
+  }, 220);
+}
+
+function closeRowSidebar() {
+  rowSidebarEditors.forEach(function (ed) { ed.destroy(); });
+  rowSidebarEditors = [];
+  window.rowSidebarEditors = rowSidebarEditors;
+  rowSidebarCtid = null;
+  rowSidebarTable = null;
+
+  $("#row_sidebar").removeClass("open");
+  $("#row_sidebar_fields").empty();
+}
+
+function bindRowSidebar() {
+  $("#row_sidebar_close_x, #row_sidebar_close_btn").on("click", function () {
+    closeRowSidebar();
+  });
+
+  $("#row_sidebar_save").on("click", function () {
+    if (!rowSidebarCtid || !rowSidebarTable) return;
+
+    var changed = rowSidebarEditors.filter(function (ed) {
+      return ed.getValue() !== ed._originalValue;
+    });
+
+    if (changed.length === 0) { closeRowSidebar(); return; }
+
+    var pending = changed.length;
+    var errors = [];
+
+    changed.forEach(function (ed) {
+      var colName = ed._colName;
+      var val = ed.getValue();
+      var params = { column: colName, ctid: rowSidebarCtid, value: val };
+      if (val === "") params.set_null = "true";
+      apiCall(
+        "post",
+        "/tables/" + rowSidebarTable + "/cell",
+        params,
+        function (data) {
+          pending--;
+          if (data && data.error) errors.push(colName + ": " + data.error);
+          if (pending === 0) {
+            if (errors.length) {
+              $("#row_sidebar_error").text(errors.join("; ")).show();
+            } else {
+              closeRowSidebar();
+              showPaginatedTableContent();
+            }
+          }
+        }
+      );
+    });
+  });
+
+  // Sidebar width drag (left edge handle)
+  var sidebarEl = document.getElementById("row_sidebar");
+  var sidebarResizeHandle = document.getElementById("row_sidebar_resize_handle");
+  sidebarResizeHandle.addEventListener("mousedown", function (e) {
+    e.preventDefault();
+    var startX = e.clientX;
+    var startW = sidebarEl.offsetWidth;
+    sidebarResizeHandle.classList.add("dragging");
+    document.body.style.cursor = "ew-resize";
+    document.body.style.userSelect = "none";
+
+    function onMove(e) {
+      var w = Math.min(Math.max(startW + (startX - e.clientX), 260), Math.floor(window.innerWidth * 0.7));
+      sidebarEl.style.width = w + "px";
+    }
+
+    function onUp() {
+      sidebarResizeHandle.classList.remove("dragging");
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
+      document.removeEventListener("mousemove", onMove);
+      document.removeEventListener("mouseup", onUp);
+      rowSidebarEditors.forEach(function (ed) { ed.resize(); });
+    }
+
+    document.addEventListener("mousemove", onMove);
+    document.addEventListener("mouseup", onUp);
+  });
+
+  // Per-field height drag (bottom handle of each editor)
+  $("#row_sidebar_fields").on("mousedown", ".ace-field-resize-handle", function (e) {
+    e.preventDefault();
+    var handle = $(this);
+    var aceEl = handle.prev(".row-sidebar-ace");
+    var startY = e.clientY;
+    var startH = aceEl.height();
+    var editorId = aceEl.attr("id");
+    var ed = rowSidebarEditors.filter(function (ed) { return ed.container.id === editorId; })[0];
+
+    handle.addClass("dragging");
+    document.body.style.cursor = "ns-resize";
+    document.body.style.userSelect = "none";
+
+    function onMove(e) {
+      var h = Math.max(40, startH + (e.clientY - startY));
+      aceEl.height(h);
+      if (ed) ed.resize();
+    }
+
+    function onUp() {
+      handle.removeClass("dragging");
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
+      $(document).off("mousemove.fieldresize mouseup.fieldresize");
+    }
+
+    $(document).on("mousemove.fieldresize", onMove).on("mouseup.fieldresize", onUp);
+  });
 }
 
 function performTableAction(table, action, el) {
@@ -1270,6 +1471,89 @@ function getSubquery(text, cursor) {
       numChunks: numChunks,
     };
   }
+}
+
+function formatSQL(sql) {
+  if (!sql || !sql.trim()) return sql;
+
+  var INDENT = "  ";
+
+  // Protect string literals and quoted identifiers
+  var protected_parts = [];
+  function protect(m) {
+    protected_parts.push(m);
+    return "\x00" + (protected_parts.length - 1) + "\x00";
+  }
+  sql = sql.replace(/'(?:[^'\\]|\\.)*'|"(?:[^"\\]|\\.)*"|\$\$[\s\S]*?\$\$/g, protect);
+
+  // Normalize whitespace
+  sql = sql.replace(/\s+/g, " ").trim();
+
+  // Major clause keywords → newline before
+  var clauses = [
+    "SELECT DISTINCT", "SELECT",
+    "INSERT INTO", "INSERT",
+    "UPDATE",
+    "DELETE FROM", "DELETE",
+    "FROM",
+    "SET",
+    "WHERE",
+    "INNER JOIN", "LEFT OUTER JOIN", "RIGHT OUTER JOIN", "FULL OUTER JOIN",
+    "CROSS JOIN", "LEFT JOIN", "RIGHT JOIN", "FULL JOIN", "JOIN",
+    "ON",
+    "GROUP BY",
+    "HAVING",
+    "ORDER BY",
+    "LIMIT",
+    "OFFSET",
+    "UNION ALL", "UNION",
+    "INTERSECT",
+    "EXCEPT",
+    "VALUES",
+    "RETURNING",
+    "WITH",
+  ];
+
+  var clauseRe = new RegExp(
+    "\\b(" + clauses.map(function (k) { return k.replace(/ /g, "\\s+"); }).join("|") + ")\\b",
+    "gi"
+  );
+  sql = sql.replace(clauseRe, function (m) { return "\n" + m.toUpperCase(); });
+
+  // AND / OR in conditions → indent
+  sql = sql.replace(/\b(AND|OR)\b/gi, function (m) { return "\n  " + m.toUpperCase(); });
+
+  // Depth-based indentation via paren tracking
+  var lines = sql.split("\n");
+  var depth = 0;
+  var output = [];
+
+  lines.forEach(function (line) {
+    line = line.trim();
+    if (!line) return;
+
+    var bare = line.replace(/\x00\d+\x00/g, "");
+    var opens = (bare.match(/\(/g) || []).length;
+    var closes = (bare.match(/\)/g) || []).length;
+
+    if (closes > opens) depth = Math.max(0, depth - (closes - opens));
+    output.push(INDENT.repeat(depth) + line);
+    if (opens > closes) depth += opens - closes;
+  });
+
+  sql = output.join("\n");
+
+  // Restore protected parts
+  sql = sql.replace(/\x00(\d+)\x00/g, function (m, i) { return protected_parts[+i]; });
+
+  return sql.trim();
+}
+
+function runFormatQuery() {
+  var sql = editor.getValue();
+  if (!sql.trim()) return;
+  var formatted = formatSQL(sql);
+  editor.setValue(formatted, -1);
 }
 
 function runQuery() {
@@ -1959,6 +2243,25 @@ function bindTableHeaderMenu() {
           $("select.filter").val("equal");
           $("#table_filter_value").val(colValue);
           $("#rows_filter").submit();
+          break;
+        case "delete_row":
+          var tr = $(context).closest("tr");
+          var ctid = tr.data("ctid");
+          var tableName = $("#results").data("table");
+          if (!ctid || !tableName) break;
+          if (!confirm("Delete this row?")) break;
+          executeQuery(
+            "DELETE FROM " + tableName + " WHERE ctid = '" + ctid + "'",
+            function (data) {
+              if (data && data.error) {
+                alert("Error: " + data.error);
+                return;
+              }
+              closeRowSidebar();
+              showPaginatedTableContent();
+            }
+          );
+          break;
       }
     },
   });
@@ -2325,6 +2628,207 @@ function initHistoryFinder() {
   $("#history_overlay").on("click", closeHistoryFinder);
 }
 
+var FAVORITES_KEY = "pgweb_favorite_queries";
+
+function getFavorites() {
+  try { return JSON.parse(localStorage.getItem(FAVORITES_KEY) || "[]"); }
+  catch (e) { return []; }
+}
+
+function saveFavorites(list) {
+  localStorage.setItem(FAVORITES_KEY, JSON.stringify(list));
+}
+
+function initFavoritesFinder() {
+  var favActiveIdx = -1;
+  var favFiltered = [];
+
+  function highlightMatch(text, query) {
+    if (!query) return escapeHtml(text);
+    var escaped = escapeHtml(text);
+    var escapedQ = escapeHtml(query).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    return escaped.replace(new RegExp("(" + escapedQ + ")", "gi"), "<em>$1</em>");
+  }
+
+  function updateFavActive() {
+    var $items = $("#favorites_results li[data-idx]");
+    $items.removeClass("fav-active");
+    if (favActiveIdx >= 0) {
+      var $active = $items.filter('[data-idx="' + favActiveIdx + '"]');
+      $active.addClass("fav-active");
+      var container = document.getElementById("favorites_results");
+      var el = $active[0];
+      if (el && container) {
+        var elBottom = el.offsetTop + el.offsetHeight;
+        var contBottom = container.scrollTop + container.clientHeight;
+        if (elBottom > contBottom) container.scrollTop = elBottom - container.clientHeight;
+        else if (el.offsetTop < container.scrollTop) container.scrollTop = el.offsetTop;
+      }
+    }
+  }
+
+  function renderFavResults(query) {
+    var q = (query || "").toLowerCase().trim();
+    var all = getFavorites();
+    favFiltered = !q
+      ? all
+      : all.filter(function (f) {
+          return f.name.toLowerCase().indexOf(q) !== -1 ||
+                 f.query.toLowerCase().indexOf(q) !== -1;
+        });
+
+    var $list = $("#favorites_results");
+    $list.empty();
+
+    if (favFiltered.length === 0) {
+      $list.append('<li class="favorites-empty">No favorites saved</li>');
+      return;
+    }
+
+    favFiltered.forEach(function (f, idx) {
+      var preview = f.query.replace(/\s+/g, " ").trim();
+      var display = preview.length > 70 ? preview.slice(0, 70) + "…" : preview;
+      $list.append(
+        '<li data-idx="' + idx + '">' +
+          '<i class="fa fa-star fav-icon"></i>' +
+          '<span class="fav-name">' + highlightMatch(f.name, q) + "</span>" +
+          '<span class="fav-query">' + highlightMatch(display, q) + "</span>" +
+          '<button class="fav-delete" data-idx="' + idx + '" title="Delete favorite"><i class="fa fa-times"></i></button>' +
+        "</li>"
+      );
+    });
+
+    updateFavActive();
+  }
+
+  function selectFavItem(idx) {
+    var f = favFiltered[idx];
+    if (!f) return;
+    closeFavoritesFinder();
+    editor.setValue(f.query);
+    editor.clearSelection();
+    editor.focus();
+    $("#table_query").click();
+  }
+
+  function deleteFavItem(idx) {
+    var f = favFiltered[idx];
+    if (!f) return;
+    var all = getFavorites();
+    saveFavorites(all.filter(function (item) { return item.id !== f.id; }));
+    favActiveIdx = Math.min(favActiveIdx, favFiltered.length - 2);
+    renderFavResults($("#favorites_input").val());
+  }
+
+  function openFavoritesFinder() {
+    favActiveIdx = getFavorites().length > 0 ? 0 : -1;
+    renderFavResults("");
+    $("#favorites_overlay").show();
+    $("#favorites_modal").show();
+    $("#favorites_input").val("").focus();
+  }
+
+  function closeFavoritesFinder() {
+    $("#favorites_overlay").hide();
+    $("#favorites_modal").hide();
+    favActiveIdx = -1;
+    favFiltered = [];
+  }
+
+  // Ctrl+Shift+F — toggle favorites (use Ctrl on both platforms; Cmd+Shift+F is reserved by browsers on Mac)
+  $(document).on("keydown", function (e) {
+    if (e.ctrlKey && e.shiftKey && e.key === "F") {
+      e.preventDefault();
+      if ($("#favorites_modal").is(":visible")) {
+        closeFavoritesFinder();
+      } else {
+        openFavoritesFinder();
+      }
+      return;
+    }
+
+    if (!$("#favorites_modal").is(":visible")) return;
+
+    if (e.key === "Escape") {
+      e.preventDefault();
+      closeFavoritesFinder();
+    } else if (e.key === "ArrowDown") {
+      e.preventDefault();
+      favActiveIdx = Math.min(favActiveIdx + 1, favFiltered.length - 1);
+      updateFavActive();
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      favActiveIdx = Math.max(favActiveIdx - 1, 0);
+      updateFavActive();
+    } else if (e.key === "Enter") {
+      e.preventDefault();
+      selectFavItem(favActiveIdx);
+    } else if (e.key === "Delete" && favActiveIdx >= 0) {
+      e.preventDefault();
+      deleteFavItem(favActiveIdx);
+    }
+  });
+
+  $("#favorites_input").on("input", function () {
+    favActiveIdx = 0;
+    renderFavResults($(this).val());
+  });
+
+  $("#favorites_results").on("click", "li[data-idx]", function (e) {
+    if ($(e.target).closest(".fav-delete").length) return;
+    selectFavItem(parseInt($(this).attr("data-idx"), 10));
+  });
+
+  $("#favorites_results").on("mousemove", "li[data-idx]", function () {
+    favActiveIdx = parseInt($(this).attr("data-idx"), 10);
+    updateFavActive();
+  });
+
+  $("#favorites_results").on("click", ".fav-delete", function (e) {
+    e.stopPropagation();
+    deleteFavItem(parseInt($(this).attr("data-idx"), 10));
+  });
+
+  $("#favorites_overlay").on("click", closeFavoritesFinder);
+
+  // Register in Ace so it doesn't swallow Ctrl+Shift+F before bubbling to document
+  editor.commands.addCommand({
+    name: "open_favorites",
+    bindKey: { win: "Ctrl-Shift-F", mac: "Ctrl-Shift-F" },
+    exec: function () { openFavoritesFinder(); }
+  });
+
+  $("#open-favorites").on("click", openFavoritesFinder);
+
+  $("#save-favorite").on("click", function () {
+    var query = editor.getValue().trim();
+    if (!query) {
+      alert("Editor is empty — nothing to save.");
+      return;
+    }
+    var name = window.prompt("Favorite name:", "");
+    if (name === null) return;
+    name = name.trim();
+    if (!name) {
+      alert("Name required.");
+      return;
+    }
+    var list = getFavorites();
+    list.push({
+      id: Date.now() + "-" + Math.random().toString(36).slice(2, 7),
+      name: name,
+      query: query,
+      created_at: new Date().toISOString()
+    });
+    saveFavorites(list);
+    var $btn = $("#save-favorite");
+    $btn.find("i").removeClass("fa-star-o").addClass("fa-star");
+    setTimeout(function () {
+      $btn.find("i").removeClass("fa-star").addClass("fa-star-o");
+    }, 1200);
+  });
+}
+
 function initShortcutsModal() {
   var isMac = navigator.userAgent.indexOf("Mac") > -1;
   var mod = isMac ? "\u2318" : "Ctrl";
@@ -2342,6 +2846,7 @@ function initShortcutsModal() {
       items: [
         { keys: [mod, "P"], desc: "Search schema objects" },
         { keys: [mod, "Shift", "H"], desc: "Search query history" },
+        { keys: ["Ctrl", "Shift", "F"], desc: "Browse favorite queries" },
       ],
     },
   ];
@@ -2928,6 +3433,10 @@ $(document).ready(function () {
     runAnalyze();
   });
 
+  $("#format-query").on("click", function () {
+    runFormatQuery();
+  });
+
   $("#csv").on("click", function () {
     exportTo("csv");
   });
@@ -2947,6 +3456,7 @@ $(document).ready(function () {
   $("#results").on("click", "tr", function (e) {
     $("#results tr.selected").removeClass();
     $(this).addClass("selected");
+    openRowSidebar(this);
   });
 
   $("#objects").on("click", ".schema-group-title", function (e) {
@@ -3331,7 +3841,9 @@ $(document).ready(function () {
   bindDatabaseObjectsFilter();
   initFinder();
   initHistoryFinder();
+  initFavoritesFinder();
   initShortcutsModal();
+  bindRowSidebar();
 
   // Set session from the url
   var reqUrl = new URL(window.location);
