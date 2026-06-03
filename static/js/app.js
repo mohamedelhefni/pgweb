@@ -436,6 +436,167 @@ function unescapeHtml(str) {
   return e.childNodes.length === 0 ? "" : e.childNodes[0].nodeValue;
 }
 
+var SAVED_CONNECTIONS_KEY = "pgweb_saved_connections";
+var RECENT_CONNECTIONS_KEY = "pgweb_recent_connections";
+var MAX_RECENT = 5;
+
+function getSavedConnections() {
+  try { return JSON.parse(localStorage.getItem(SAVED_CONNECTIONS_KEY) || "[]"); }
+  catch(e) { return []; }
+}
+
+function getRecentConnections() {
+  try { return JSON.parse(localStorage.getItem(RECENT_CONNECTIONS_KEY) || "[]"); }
+  catch(e) { return []; }
+}
+
+function getFormConnectionData() {
+  var mode = $(".connection-group-switch button.active").attr("data") || "standard";
+  return {
+    mode: mode,
+    url: $.trim($("#connection_url").val()),
+    host: $.trim($("#pg_host").val()),
+    port: $.trim($("#pg_port").val()) || "5432",
+    user: $.trim($("#pg_user").val()),
+    password: $("#pg_password").val(),
+    db: $.trim($("#pg_db").val()),
+    ssl: $("#connection_ssl").val(),
+    ssh_host: $.trim($("#ssh_host").val()),
+    ssh_port: $.trim($("#ssh_port").val()),
+    ssh_user: $.trim($("#ssh_user").val()),
+    ssh_password: $("#ssh_password").val(),
+    ssh_key: $.trim($("#ssh_key").val()),
+    ssh_key_password: $("#ssh_key_password").val()
+  };
+}
+
+function saveConnectionToStorage(name, data) {
+  var list = getSavedConnections();
+  list.unshift({ id: guid(), name: name, mode: data.mode, url: data.url,
+    host: data.host, port: data.port, user: data.user, password: data.password,
+    db: data.db, ssl: data.ssl, ssh_host: data.ssh_host, ssh_port: data.ssh_port,
+    ssh_user: data.ssh_user, ssh_password: data.ssh_password,
+    ssh_key: data.ssh_key, ssh_key_password: data.ssh_key_password,
+    savedAt: new Date().toISOString() });
+  localStorage.setItem(SAVED_CONNECTIONS_KEY, JSON.stringify(list));
+}
+
+function addRecentConnectionToStorage(data) {
+  if (!data.host && !data.url) return;
+  var key = data.host + "|" + data.port + "|" + data.user + "|" + data.db;
+  var list = getRecentConnections().filter(function(c) {
+    return (c.host + "|" + c.port + "|" + c.user + "|" + c.db) !== key;
+  });
+  list.unshift({ id: guid(), mode: data.mode, host: data.host, port: data.port,
+    user: data.user, db: data.db, ssl: data.ssl, url: data.url,
+    connectedAt: new Date().toISOString() });
+  localStorage.setItem(RECENT_CONNECTIONS_KEY, JSON.stringify(list.slice(0, MAX_RECENT)));
+}
+
+function deleteSavedConnection(id) {
+  localStorage.setItem(SAVED_CONNECTIONS_KEY,
+    JSON.stringify(getSavedConnections().filter(function(c) { return c.id !== id; })));
+}
+
+function timeAgo(iso) {
+  var d = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
+  if (d < 60) return d + "s ago";
+  if (d < 3600) return Math.floor(d / 60) + "m ago";
+  if (d < 86400) return Math.floor(d / 3600) + "h ago";
+  return Math.floor(d / 86400) + "d ago";
+}
+
+function setConnectionMode(mode) {
+  $(".connection-group-switch button").removeClass("active");
+  $(".connection-group-switch button[data='" + mode + "']").addClass("active");
+  $(".connection-scheme-group").hide();
+  $(".connection-standard-group").hide();
+  $(".connection-ssh-group").hide();
+  if (mode === "scheme") { $(".connection-scheme-group").show(); }
+  else if (mode === "standard") { $(".connection-standard-group").show(); }
+  else if (mode === "ssh") { $(".connection-standard-group").show(); $(".connection-ssh-group").show(); }
+}
+
+function renderSavedConnections() {
+  var list = $("#saved_connections_list").empty();
+  var conns = getSavedConnections();
+  if (!conns.length) { list.html('<div class="conn-sidebar-empty">No saved connections</div>'); return; }
+  conns.forEach(function(c) {
+    var meta = c.mode === "scheme"
+      ? (c.url || "").replace(/:[^:@]*@/, ":***@")
+      : (c.user || "") + "@" + (c.host || "localhost") + "/" + (c.db || "");
+    var el = $('<div class="conn-item" data-id="' + c.id + '">' +
+      '<div class="conn-item-body">' +
+        '<div class="conn-item-name">' + escapeHtml(c.name) + '</div>' +
+        '<div class="conn-item-meta">' + escapeHtml(meta) + '</div>' +
+      '</div>' +
+      '<button type="button" class="conn-item-delete" data-id="' + c.id + '" title="Remove">&times;</button>' +
+    '</div>');
+    list.append(el);
+  });
+}
+
+function renderRecentConnections() {
+  var list = $("#recent_connections_list").empty();
+  var conns = getRecentConnections();
+  if (!conns.length) { list.html('<div class="conn-sidebar-empty">No recent connections</div>'); return; }
+  conns.forEach(function(c) {
+    var name = c.mode === "scheme"
+      ? (c.url || "").replace(/:[^:@]*@/, ":***@").substring(0, 38)
+      : (c.user || "") + "@" + (c.host || "localhost") + "/" + (c.db || "");
+    var el = $('<div class="conn-item conn-item-recent" data-id="' + c.id + '">' +
+      '<div class="conn-item-body">' +
+        '<div class="conn-item-name">' + escapeHtml(name) + '</div>' +
+        '<div class="conn-item-meta">' + timeAgo(c.connectedAt) + '</div>' +
+      '</div>' +
+    '</div>');
+    list.append(el);
+  });
+}
+
+function renderConnectionsSidebar() {
+  renderSavedConnections();
+  renderRecentConnections();
+}
+
+function loadSavedConnectionIntoForm(id) {
+  var c = getSavedConnections().filter(function(x) { return x.id === id; })[0];
+  if (!c) return;
+  setConnectionMode(c.mode || "standard");
+  $("#connection_url").val(c.url || "");
+  $("#pg_host").val(c.host || "");
+  $("#pg_port").val(c.port || "");
+  $("#pg_user").val(c.user || "");
+  $("#pg_password").val(c.password || "");
+  $("#pg_db").val(c.db || "");
+  $("#connection_ssl").val(c.ssl || "disable");
+  $("#ssh_host").val(c.ssh_host || "");
+  $("#ssh_port").val(c.ssh_port || "");
+  $("#ssh_user").val(c.ssh_user || "");
+  $("#ssh_password").val(c.ssh_password || "");
+  $("#ssh_key").val(c.ssh_key || "");
+  $("#ssh_key_password").val(c.ssh_key_password || "");
+  $("#save_connection_checkbox").prop("checked", false);
+  $(".save-connection-name").hide().val("");
+  $("#connection_error").hide();
+}
+
+function loadRecentConnectionIntoForm(id) {
+  var c = getRecentConnections().filter(function(x) { return x.id === id; })[0];
+  if (!c) return;
+  setConnectionMode(c.mode || "standard");
+  $("#connection_url").val(c.url || "");
+  $("#pg_host").val(c.host || "");
+  $("#pg_port").val(c.port || "");
+  $("#pg_user").val(c.user || "");
+  $("#pg_password").val("");
+  $("#pg_db").val(c.db || "");
+  $("#connection_ssl").val(c.ssl || "disable");
+  $("#connection_error").hide();
+  if (c.mode === "scheme") { $("#connection_url").focus(); }
+  else { $("#pg_password").focus(); }
+}
+
 function tryParseJSON(str) {
   if (typeof str !== "string") return null;
   var s = str.trim();
@@ -1540,7 +1701,7 @@ function getLatestReleaseInfo(current) {
             " on <a target='_blank' href='" +
             release.html_url +
             "'>Github</a>";
-          $(".connection-settings .update").html(message).fadeIn();
+          $(".connection-page-header .update").html(message).fadeIn();
         }
       },
     );
@@ -1551,11 +1712,12 @@ function getLatestReleaseInfo(current) {
 
 function showConnectionSettings() {
   // Show the current postgres version
-  $(".connection-settings .version")
+  $(".connection-page-header .version")
     .text("v" + appInfo.version)
     .show();
   $("#connection_window").show();
   initConnectionWindow();
+  renderConnectionsSidebar();
 
   // Check github release page for updates
   getLatestReleaseInfo(appInfo);
@@ -1608,12 +1770,14 @@ function initConnectionWindow() {
     $(".connection-bookmarks-group").show();
     $(".connection-standard-group").hide();
     $(".connection-ssh-group").hide();
+    $("#save_connection_group").hide();
   } else {
     $(".connection-group-switch").show();
     $(".connection-scheme-group").hide();
     $(".connection-bookmarks-group").show();
     $(".connection-standard-group").show();
     $(".connection-ssh-group").hide();
+    $("#save_connection_group").show();
   }
 }
 
@@ -1955,6 +2119,208 @@ function initFinder() {
   });
 
   $("#finder_overlay").on("click", closeFinder);
+}
+
+function initHistoryFinder() {
+  var historyActiveIdx = -1;
+  var historyFiltered = [];
+  var historyData = [];
+
+  function highlightMatch(text, query) {
+    if (!query) return escapeHtml(text);
+    var escaped = escapeHtml(text);
+    var escapedQ = escapeHtml(query).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    return escaped.replace(new RegExp("(" + escapedQ + ")", "gi"), "<em>$1</em>");
+  }
+
+  function updateHistoryActive() {
+    var $items = $("#history_results li[data-idx]");
+    $items.removeClass("history-active");
+    if (historyActiveIdx >= 0) {
+      var $active = $items.filter('[data-idx="' + historyActiveIdx + '"]');
+      $active.addClass("history-active");
+      var container = document.getElementById("history_results");
+      var el = $active[0];
+      if (el && container) {
+        var elBottom = el.offsetTop + el.offsetHeight;
+        var contBottom = container.scrollTop + container.clientHeight;
+        if (elBottom > contBottom) container.scrollTop = elBottom - container.clientHeight;
+        else if (el.offsetTop < container.scrollTop) container.scrollTop = el.offsetTop;
+      }
+    }
+  }
+
+  function renderHistoryResults(query) {
+    var q = (query || "").toLowerCase().trim();
+    historyFiltered = !q
+      ? historyData.slice(0, 100)
+      : historyData.filter(function (h) {
+          return h.query.toLowerCase().indexOf(q) !== -1;
+        }).slice(0, 100);
+
+    var $list = $("#history_results");
+    $list.empty();
+
+    if (historyFiltered.length === 0) {
+      $list.append('<li class="history-empty">No history found</li>');
+      return;
+    }
+
+    historyFiltered.forEach(function (h, idx) {
+      var preview = h.query.replace(/\s+/g, " ").trim();
+      var display = preview.length > 90 ? preview.slice(0, 90) + "\u2026" : preview;
+      var ts = h.timestamp
+        ? '<span class="history-item-ts">' + escapeHtml(h.timestamp) + "</span>"
+        : "";
+      $list.append(
+        '<li data-idx="' + idx + '">' +
+          '<i class="fa fa-history history-item-icon"></i>' +
+          '<span class="history-item-query">' + highlightMatch(display, q) + "</span>" +
+          ts +
+        "</li>"
+      );
+    });
+
+    updateHistoryActive();
+  }
+
+  function selectHistoryItem(idx) {
+    var h = historyFiltered[idx];
+    if (!h) return;
+    closeHistoryFinder();
+    editor.setValue(h.query);
+    editor.clearSelection();
+    editor.focus();
+    $("#table_query").click();
+  }
+
+  function openHistoryFinder() {
+    if (!connected) return;
+    getHistory(function (data) {
+      // newest first
+      historyData = (data || []).slice().reverse();
+      historyActiveIdx = historyData.length > 0 ? 0 : -1;
+      renderHistoryResults("");
+    });
+    $("#history_overlay").show();
+    $("#history_modal").show();
+    $("#history_input").val("").focus();
+  }
+
+  function closeHistoryFinder() {
+    $("#history_overlay").hide();
+    $("#history_modal").hide();
+    historyActiveIdx = -1;
+    historyFiltered = [];
+  }
+
+  // Ctrl+Shift+H / Cmd+Shift+H — toggle history finder
+  $(document).on("keydown", function (e) {
+    if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === "H") {
+      e.preventDefault();
+      if ($("#history_modal").is(":visible")) {
+        closeHistoryFinder();
+      } else {
+        openHistoryFinder();
+      }
+      return;
+    }
+
+    if (!$("#history_modal").is(":visible")) return;
+
+    if (e.key === "Escape") {
+      e.preventDefault();
+      closeHistoryFinder();
+    } else if (e.key === "ArrowDown") {
+      e.preventDefault();
+      historyActiveIdx = Math.min(historyActiveIdx + 1, historyFiltered.length - 1);
+      updateHistoryActive();
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      historyActiveIdx = Math.max(historyActiveIdx - 1, 0);
+      updateHistoryActive();
+    } else if (e.key === "Enter") {
+      e.preventDefault();
+      selectHistoryItem(historyActiveIdx);
+    }
+  });
+
+  $("#history_input").on("input", function () {
+    historyActiveIdx = 0;
+    renderHistoryResults($(this).val());
+  });
+
+  $("#history_results").on("click", "li[data-idx]", function () {
+    selectHistoryItem(parseInt($(this).attr("data-idx"), 10));
+  });
+
+  $("#history_results").on("mousemove", "li[data-idx]", function () {
+    historyActiveIdx = parseInt($(this).attr("data-idx"), 10);
+    updateHistoryActive();
+  });
+
+  $("#history_overlay").on("click", closeHistoryFinder);
+}
+
+function initShortcutsModal() {
+  var isMac = navigator.userAgent.indexOf("Mac") > -1;
+  var mod = isMac ? "\u2318" : "Ctrl";
+
+  var shortcuts = [
+    {
+      group: "Editor",
+      items: [
+        { keys: [mod, "Enter"], desc: "Run query" },
+        { keys: [mod, "E"], desc: "Explain query" },
+      ],
+    },
+    {
+      group: "Navigation",
+      items: [
+        { keys: [mod, "P"], desc: "Search schema objects" },
+        { keys: [mod, "Shift", "H"], desc: "Search query history" },
+      ],
+    },
+  ];
+
+  var html = "";
+  shortcuts.forEach(function (g) {
+    html += '<div class="shortcuts-group">';
+    html += '<div class="shortcuts-group-title">' + g.group + "</div>";
+    g.items.forEach(function (item) {
+      html += '<div class="shortcut-row">';
+      html += '<span class="shortcut-keys">';
+      item.keys.forEach(function (k) {
+        html += "<kbd>" + k + "</kbd>";
+      });
+      html += "</span>";
+      html += '<span class="shortcut-desc">' + item.desc + "</span>";
+      html += "</div>";
+    });
+    html += "</div>";
+  });
+  $(".shortcuts-body").html(html);
+
+  function openShortcuts() {
+    $("#shortcuts_overlay").show();
+    $("#shortcuts_modal").show();
+  }
+
+  function closeShortcuts() {
+    $("#shortcuts_overlay").hide();
+    $("#shortcuts_modal").hide();
+  }
+
+  $("#shortcuts_btn").on("click", openShortcuts);
+  $(".shortcuts-close").on("click", closeShortcuts);
+  $("#shortcuts_overlay").on("click", closeShortcuts);
+
+  $(document).on("keydown", function (e) {
+    if (e.key === "Escape" && $("#shortcuts_modal").is(":visible")) {
+      e.preventDefault();
+      closeShortcuts();
+    }
+  });
 }
 
 function bindDatabaseObjectsFilter() {
@@ -2807,12 +3173,38 @@ $(document).ready(function () {
     });
   });
 
+  $("#save_connection_checkbox").on("change", function() {
+    if ($(this).is(":checked")) {
+      $(".save-connection-name").show().focus();
+    } else {
+      $(".save-connection-name").hide().val("");
+    }
+  });
+
+  $("#saved_connections_list").on("click", ".conn-item", function(e) {
+    if ($(e.target).hasClass("conn-item-delete")) return;
+    loadSavedConnectionIntoForm($(this).data("id"));
+  });
+
+  $("#saved_connections_list").on("click", ".conn-item-delete", function(e) {
+    e.stopPropagation();
+    deleteSavedConnection($(this).data("id"));
+    renderSavedConnections();
+  });
+
+  $("#recent_connections_list").on("click", ".conn-item", function() {
+    loadRecentConnectionIntoForm($(this).data("id"));
+  });
+
   $("#connection_form").on("submit", function (e) {
     e.preventDefault();
 
     var button = $(this).find("button.open-connection");
     var params = {};
     var bookmarkID = $.trim($("#connection_bookmarks").val());
+    var saveChecked = $("#save_connection_checkbox").is(":checked");
+    var saveName = $.trim($("#save_connection_name").val());
+    var formData = null;
 
     if (bookmarkID != "") {
       params["bookmark_id"] = $("#connection_bookmarks").val();
@@ -2821,6 +3213,13 @@ $(document).ready(function () {
       if (params.url.length == 0) {
         return;
       }
+
+      if (saveChecked && saveName === "") {
+        $("#save_connection_name").focus();
+        return;
+      }
+
+      formData = getFormConnectionData();
 
       if ($(".connection-group-switch button.active").attr("data") == "ssh") {
         params["ssh"] = 1;
@@ -2843,6 +3242,15 @@ $(document).ready(function () {
         connected = false;
         $("#connection_error").text(resp.error).show();
       } else {
+        if (formData && saveChecked && saveName) {
+          saveConnectionToStorage(saveName, formData);
+        }
+        if (formData) {
+          addRecentConnectionToStorage(formData);
+        }
+        $("#save_connection_checkbox").prop("checked", false);
+        $(".save-connection-name").hide().val("");
+
         connected = true;
         loadSchemas();
         loadLocalQueries();
@@ -2859,6 +3267,8 @@ $(document).ready(function () {
   addShortcutTooltips();
   bindDatabaseObjectsFilter();
   initFinder();
+  initHistoryFinder();
+  initShortcutsModal();
 
   // Set session from the url
   var reqUrl = new URL(window.location);

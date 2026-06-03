@@ -399,14 +399,58 @@
             </div>
         </div>
 
-        <div id="connection_window">
-            <div class="connection-settings">
-                <div class="header">
-                    <h1>pgport</h1>
-                    <div class="version"></div>
-                    <div class="update alert alert-warning"></div>
-                </div>
+        <div id="history_overlay"></div>
 
+        <div id="history_modal">
+            <div id="history_input_wrap">
+                <i class="fa fa-history history-search-icon"></i>
+                <input
+                    id="history_input"
+                    type="text"
+                    autocomplete="off"
+                    spellcheck="false"
+                    placeholder="Search query history..."
+                />
+            </div>
+            <ul id="history_results"></ul>
+            <div id="history_footer">
+                <span><kbd>↑</kbd><kbd>↓</kbd> navigate</span>
+                <span><kbd>↵</kbd> use query</span>
+                <span><kbd>esc</kbd> close</span>
+            </div>
+        </div>
+
+        <div id="shortcuts_overlay"></div>
+
+        <div id="shortcuts_modal">
+            <div class="shortcuts-header">
+                Keyboard Shortcuts
+                <i class="fa fa-times shortcuts-close"></i>
+            </div>
+            <div class="shortcuts-body"></div>
+        </div>
+
+        <button id="shortcuts_btn" title="Keyboard shortcuts">?</button>
+
+        <div id="connection_window">
+            <div class="connection-page-header">
+                <h1>pgport</h1>
+                <div class="version"></div>
+                <div class="update alert alert-warning"></div>
+            </div>
+            <div class="connection-layout">
+                <div class="connection-sidebar">
+                    <div class="conn-sidebar-header">Connections</div>
+                    <div class="conn-sidebar-section">
+                        <div class="conn-sidebar-label">Saved</div>
+                        <div id="saved_connections_list"><div class="conn-sidebar-empty">No saved connections</div></div>
+                    </div>
+                    <div class="conn-sidebar-section">
+                        <div class="conn-sidebar-label">Recent</div>
+                        <div id="recent_connections_list"><div class="conn-sidebar-empty">No recent connections</div></div>
+                    </div>
+                </div>
+            <div class="connection-settings">
                 <form role="form" class="form-horizontal" id="connection_form">
                     <div class="text-center">
                         <div
@@ -639,6 +683,21 @@
 
                     <div id="connection_error" class="alert alert-danger"></div>
 
+                    <div id="save_connection_group" class="form-group">
+                        <div class="col-sm-12">
+                            <label class="save-connection-toggle">
+                                <input type="checkbox" id="save_connection_checkbox">
+                                Save this connection
+                            </label>
+                            <input
+                                type="text"
+                                id="save_connection_name"
+                                class="form-control save-connection-name"
+                                placeholder="Connection name (e.g. Production DB)"
+                            />
+                        </div>
+                    </div>
+
                     <div class="form-group">
                         <div class="col-sm-12">
                             <button
@@ -657,6 +716,7 @@
                         </div>
                     </div>
                 </form>
+            </div>
             </div>
         </div>
         <div id="tables_context_menu">

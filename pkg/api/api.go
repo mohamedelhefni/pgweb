@@ -506,7 +506,12 @@ func GetTableInfo(c *gin.Context) {
 
 // GetHistory renders a list of recent queries
 func GetHistory(c *gin.Context) {
-	successResponse(c, DB(c).History)
+	conn := DB(c)
+	if conn == nil {
+		successResponse(c, []interface{}{})
+		return
+	}
+	successResponse(c, conn.History)
 }
 
 // GetConnectionInfo renders information about current connection
