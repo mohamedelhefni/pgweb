@@ -175,7 +175,16 @@ function buildSchemaSection(name, objects) {
           id = item.oid;
         }
 
-        section += "<li class='schema-item schema-" + group + "' data-type='" + group + "' data-id='" + id + "' data-name='" + item.name + "'>" + icons[group] + "&nbsp;" + item.name + "</li>";
+        var expandable = (group == "table" || group == "view" || group == "materialized_view");
+        var toggleBtn = expandable ? "<span class='schema-item-toggle'><i class='fa fa-chevron-right'></i></span>" : "";
+        var columnsUl = expandable ? "<ul class='schema-item-columns'></ul>" : "";
+        var expandableClass = expandable ? " schema-item-expandable" : "";
+        if (expandable) {
+          section += "<li class='schema-item schema-" + group + expandableClass + "' data-type='" + group + "' data-id='" + id + "' data-name='" + item.name + "'>" +
+            "<div class='schema-item-row'>" + toggleBtn + icons[group] + "&nbsp;" + item.name + "</div>" + columnsUl + "</li>";
+        } else {
+          section += "<li class='schema-item schema-" + group + "' data-type='" + group + "' data-id='" + id + "' data-name='" + item.name + "'>" + icons[group] + "&nbsp;" + item.name + "</li>";
+        }
       });
       section += "</ul></div>";
     }
@@ -1034,6 +1043,7 @@ var objectAutocompleter = {
 
 function initEditor() {
   var writeQueryTimeout = null;
+  var lastSelectedMode = localStorage.getItem("editorMode") || null;
 
   editor = ace.edit("custom_query");
   editor.setOptions({
@@ -1048,6 +1058,7 @@ function initEditor() {
   editor.getSession().setMode("ace/mode/pgsql");
   editor.getSession().setTabSize(2);
   editor.getSession().setUseSoftTabs(true);
+  editor.setKeyboardHandler(lastSelectedMode);
 
   editor.commands.addCommands([{
     name: "run_query",
@@ -1084,6 +1095,25 @@ function initEditor() {
     editor.setValue(query);
     editor.clearSelection();
   }
+
+  if (lastSelectedMode == "ace/keyboard/vim") {
+    $("#vim-mode").addClass("active");
+    $("#norm-mode").removeClass("active");
+  }
+
+  $("#vim-mode").click(function() {
+    editor.setKeyboardHandler("ace/keyboard/vim");
+    $("#vim-mode").addClass("active");
+    $("#norm-mode").removeClass("active");
+    localStorage.setItem("editorMode", "ace/keyboard/vim");
+  });
+
+  $("#norm-mode").click(function() {
+    editor.setKeyboardHandler(null);
+    $("#norm-mode").addClass("active");
+    $("#vim-mode").removeClass("active");
+    localStorage.setItem("editorMode", null);
+  });
 }
 
 function addShortcutTooltips() {
@@ -1584,7 +1614,45 @@ $(document).ready(function() {
     $(this).parent().toggleClass("expanded");
   });
 
+  $("#objects").on("click", ".schema-item-toggle", function(e) {
+    e.stopPropagation();
+    var li = $(this).closest("li");
+    var columnsUl = li.find(".schema-item-columns");
+
+    li.toggleClass("expanded");
+
+    if (li.hasClass("expanded") && columnsUl.children().length === 0) {
+      var tableName = li.data("id");
+      var tableType = li.data("type");
+      columnsUl.html("<li class='schema-col-loading'>...</li>");
+
+      getTableStructure(tableName, { type: tableType }, function(data) {
+        columnsUl.empty();
+        if (data && data.rows && data.rows.length > 0) {
+          var colIdx = data.columns.indexOf("column_name");
+          var typeIdx = data.columns.indexOf("data_type");
+          data.rows.forEach(function(row) {
+            var colName = colIdx >= 0 ? row[colIdx] : "";
+            var colType = typeIdx >= 0 ? row[typeIdx] : "";
+            columnsUl.append(
+              "<li class='schema-col-item'>" +
+              "<i class='fa fa-circle-o'></i>" +
+              "<span class='schema-col-name'>" + colName + "</span>" +
+              "<span class='schema-col-type'>" + colType + "</span>" +
+              "</li>"
+            );
+          });
+        } else {
+          columnsUl.html("<li class='schema-col-empty'>no columns</li>");
+        }
+      });
+    }
+  });
+
   $("#objects").on("click", "li", function(e) {
+    if ($(e.target).closest(".schema-item-toggle").length) return;
+    if ($(this).hasClass("schema-col-item") || $(this).hasClass("schema-col-loading") || $(this).hasClass("schema-col-empty")) return;
+
     currentObject = {
       name: $(this).data("id"),
       type: $(this).data("type")
