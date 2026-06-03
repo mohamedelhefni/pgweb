@@ -1626,3 +1626,144 @@ a:hover {
   color: var(--text-2);
   margin-right: 2px;
 }
+
+/* ================================================================
+   INSERT ROW MODAL
+   ================================================================ */
+
+#insert_row_modal {
+  display: none;
+  width: 480px;
+  max-width: 90%;
+  position: fixed;
+  top: 12%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  box-shadow: 0 8px 40px var(--shadow);
+  z-index: 600;
+  overflow: hidden;
+}
+
+#insert_row_modal .title {
+  font-weight: 600;
+  font-size: 12px;
+  color: var(--text-2);
+  background: var(--bg-nav);
+  border-bottom: 1px solid var(--border);
+  padding: 0 10px;
+  height: 36px;
+  line-height: 36px;
+  letter-spacing: 0.01em;
+}
+
+#insert_row_modal .title .actions {
+  float: right;
+  display: flex;
+  align-items: center;
+  height: 36px;
+  gap: 4px;
+}
+
+#insert_row_modal .title .actions .fa {
+  cursor: pointer;
+  color: var(--text-muted);
+  font-size: 13px;
+  padding: 4px;
+  border-radius: 3px;
+}
+
+#insert_row_modal .title .actions .fa:hover {
+  color: var(--text-1);
+  background: var(--bg-hover);
+}
+
+#insert_row_fields {
+  max-height: 420px;
+  overflow-y: auto;
+  padding: 10px 14px;
+}
+
+.insert-row-field {
+  display: flex;
+  align-items: center;
+  margin-bottom: 8px;
+  gap: 8px;
+}
+
+.insert-row-field label {
+  width: 160px;
+  flex-shrink: 0;
+  font-size: 12px;
+  font-family: var(--font-mono);
+  color: var(--text-2);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  margin: 0;
+}
+
+.insert-row-field label span.type-hint {
+  font-size: 10px;
+  color: var(--text-muted);
+  font-weight: 400;
+  display: block;
+}
+
+.insert-row-field input[type="text"] {
+  flex: 1;
+  height: 26px;
+  font-size: 12px;
+  font-family: var(--font-mono);
+  padding: 2px 6px;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  color: var(--text-1);
+}
+
+.insert-row-field input[type="text"]:focus {
+  outline: none;
+  border-color: var(--color-primary);
+}
+
+.insert-row-field input[type="text"].is-null {
+  opacity: 0.4;
+}
+
+.insert-row-field .null-toggle {
+  font-size: 10px;
+  color: var(--text-muted);
+  cursor: pointer;
+  white-space: nowrap;
+  user-select: none;
+  padding: 2px 5px;
+  border-radius: 3px;
+}
+
+.insert-row-field .null-toggle:hover {
+  background: var(--bg-hover);
+  color: var(--text-2);
+}
+
+.insert-row-field .null-toggle.active {
+  color: var(--color-primary);
+}
+
+.insert-row-footer {
+  padding: 10px 14px;
+  border-top: 1px solid var(--border);
+  background: var(--bg-nav);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+#insert_row_error {
+  flex: 1;
+  font-size: 11px;
+  padding: 4px 8px;
+  margin: 0;
+}

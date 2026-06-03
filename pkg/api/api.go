@@ -451,6 +451,28 @@ func GetTableRows(c *gin.Context) {
 	serveResult(c, res, err)
 }
 
+// InsertTableRow inserts a new row into the selected table.
+func InsertTableRow(c *gin.Context) {
+	var body struct {
+		Columns []string      `json:"columns"`
+		Values  []interface{} `json:"values"`
+	}
+	if err := c.BindJSON(&body); err != nil {
+		badRequest(c, err)
+		return
+	}
+	if len(body.Columns) == 0 {
+		badRequest(c, fmt.Errorf("columns are required"))
+		return
+	}
+	err := DB(c).InsertTableRow(c.Params.ByName("table"), body.Columns, body.Values)
+	if err != nil {
+		badRequest(c, err)
+		return
+	}
+	successResponse(c, gin.H{"success": true})
+}
+
 // UpdateTableCell updates a single cell value identified by ctid
 func UpdateTableCell(c *gin.Context) {
 	column := strings.TrimSpace(c.Request.FormValue("column"))

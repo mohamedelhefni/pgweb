@@ -119,6 +119,22 @@ function explainQuery(query, cb)            { apiCall("post", "/explain", { quer
 function analyzeQuery(query, cb)            { apiCall("post", "/analyze", { query: query }, cb); }
 function disconnect(cb)                     { apiCall("post", "/disconnect", {}, cb); }
 
+function insertTableRow(table, columns, values, cb) {
+  $.ajax({
+    url: "api/tables/" + table + "/rows",
+    method: "post",
+    contentType: "application/json",
+    data: JSON.stringify({ columns: columns, values: values }),
+    headers: { "x-session-id": getSessionId() },
+    success: cb,
+    error: function(xhr) {
+      var r;
+      try { r = JSON.parse(xhr.responseText); } catch(e) { r = { error: "Request failed" }; }
+      cb(r);
+    }
+  });
+}
+
 function encodeQuery(query) {
   return Base64.encode(query).replace(/\+/g, "-").replace(/\//g, "_").replace(/=/g, ".");
 }
@@ -1960,9 +1976,130 @@ function bindContentModalEvents() {
   })
 }
 
+function bindInsertRowModal() {
+  var modal = document.getElementById("insert_row_modal");
+
+  function hideModal() {
+    $("#insert_row_modal").hide();
+    $("#insert_row_error").hide().text("");
+    $("#insert_row_fields").empty();
+  }
+
+  $(window).on("click", function(e) {
+    if (e.target && !modal.contains(e.target) && e.target.id !== "insert_row_btn") {
+      hideModal();
+    }
+  });
+
+  $(".insert-row-action").on("click", function() {
+    hideModal();
+  });
+
+  $("#insert_row_cancel").on("click", function() {
+    hideModal();
+  });
+
+  $("#insert_row_btn").on("click", function() {
+    var tableName = $("#results").data("table");
+    if (!tableName) return;
+
+    getTableStructure(tableName, {}, function(data) {
+      if (data.error) {
+        alert("Error loading table structure: " + data.error);
+        return;
+      }
+
+      var colNameIdx  = data.columns.indexOf("column_name");
+      var dataTypeIdx = data.columns.indexOf("data_type");
+      var nullableIdx = data.columns.indexOf("is_nullable");
+      var defaultIdx  = data.columns.indexOf("column_default");
+
+      var fieldsHtml = "";
+      data.rows.forEach(function(row) {
+        var colName   = row[colNameIdx];
+        var dataType  = row[dataTypeIdx];
+        var nullable  = row[nullableIdx] === "YES";
+        var colDefault = row[defaultIdx];
+        var isSerial  = colDefault && colDefault.indexOf("nextval(") === 0;
+
+        fieldsHtml += "<div class='insert-row-field' data-col='" + escapeAttr(colName) + "' data-nullable='" + nullable + "'>";
+        fieldsHtml += "<label>" + escapeHtml(colName) + "<span class='type-hint'>" + escapeHtml(dataType) + (isSerial ? " · auto" : "") + "</span></label>";
+        fieldsHtml += "<input type='text' placeholder='" + (isSerial ? "auto" : "") + "'" + (isSerial ? " disabled" : "") + " />";
+        if (nullable) {
+          fieldsHtml += "<span class='null-toggle' title='Toggle NULL'>NULL</span>";
+        }
+        fieldsHtml += "</div>";
+      });
+
+      $("#insert_row_fields").html(fieldsHtml);
+      $("#insert_row_error").hide().text("");
+      $("#insert_row_modal").show();
+
+      // Focus first non-disabled input
+      $("#insert_row_fields input:not([disabled]):first").focus();
+
+      // NULL toggle
+      $("#insert_row_fields").off("click", ".null-toggle").on("click", ".null-toggle", function() {
+        var toggle = $(this);
+        var input  = toggle.siblings("input");
+        var isNull = toggle.hasClass("active");
+        if (isNull) {
+          toggle.removeClass("active");
+          input.prop("disabled", false).removeClass("is-null");
+        } else {
+          toggle.addClass("active");
+          input.prop("disabled", true).addClass("is-null").val("");
+        }
+      });
+    });
+  });
+
+  $("#insert_row_save").on("click", function() {
+    var tableName = $("#results").data("table");
+    if (!tableName) return;
+
+    var columns = [];
+    var values  = [];
+    var valid   = true;
+
+    $("#insert_row_fields .insert-row-field").each(function() {
+      var field   = $(this);
+      var colName = field.data("col");
+      var input   = field.find("input");
+      var isNull  = field.find(".null-toggle").hasClass("active");
+      var isAutoField = input.prop("disabled") && !isNull; // serial/auto columns
+
+      if (isAutoField) return; // skip — DB generates value
+
+      if (isNull) {
+        columns.push(colName);
+        values.push(null);
+      } else if (input.val() !== "") {
+        // only include column if user provided a value; empty = let DB use default
+        columns.push(colName);
+        values.push(input.val());
+      }
+      // empty + no NULL toggle = omit column entirely → DB default applies
+    });
+
+    $("#insert_row_save").prop("disabled", true);
+
+    insertTableRow(tableName, columns, values, function(data) {
+      $("#insert_row_save").prop("disabled", false);
+      if (data && data.error) {
+        $("#insert_row_error").text(data.error).show();
+        return;
+      }
+      hideModal();
+      showPaginatedTableContent();
+    });
+  });
+}
+
 $(document).ready(function() {
   bindInputResizeEvents();
   bindContentModalEvents();
+  bindInsertRowModal();
 
   $("#table_content").on("click",     function() { showTableContent();     });
   $("#table_structure").on("click",   function() { showTableStructure();   });

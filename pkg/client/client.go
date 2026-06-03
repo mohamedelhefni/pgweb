@@ -316,6 +316,42 @@ func (client *Client) TableRows(table string, opts RowsOptions) (*Result, error)
 	return client.query(sql)
 }
 
+// InsertTableRow inserts a new row into the given table.
+// columns and values must have equal length; a nil entry in values inserts NULL.
+// If columns is empty, uses DEFAULT VALUES to let the DB fill all defaults.
+func (client *Client) InsertTableRow(table string, columns []string, values []interface{}) error {
+	schema, tbl := getSchemaAndTable(table)
+
+	var sql string
+	if len(columns) == 0 {
+		// All columns omitted — rely entirely on DB defaults
+		sql = fmt.Sprintf(`INSERT INTO "%s"."%s" DEFAULT VALUES`, schema, tbl)
+		_, err := client.db.Exec(sql)
+		return err
+	}
+
+	if len(columns) != len(values) {
+		return fmt.Errorf("columns and values length mismatch")
+	}
+
+	cols := make([]string, len(columns))
+	placeholders := make([]string, len(columns))
+	for i, col := range columns {
+		cols[i] = fmt.Sprintf(`"%s"`, col)
+		placeholders[i] = fmt.Sprintf("$%d", i+1)
+	}
+
+	sql = fmt.Sprintf(
+		`INSERT INTO "%s"."%s" (%s) VALUES (%s)`,
+		schema, tbl,
+		strings.Join(cols, ", "),
+		strings.Join(placeholders, ", "),
+	)
+
+	_, err := client.db.Exec(sql, values...)
+	return err
+}
+
 // UpdateTableCell updates a single cell value identified by ctid.
 func (client *Client) UpdateTableCell(table, column, ctid, value string, setNull bool) error {
 	schema, table := getSchemaAndTable(table)
