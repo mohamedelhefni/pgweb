@@ -12,6 +12,60 @@ env:
   GHCR_REPOSITORY: mohamedelhefni/pgport
 
 jobs:
+  binary-release:
+    name: Build and publish binaries
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      - name: Build binaries
+        env:
+          PKG: github.com/mohamedelhefni/pgport
+          GIT_COMMIT: ${{ github.sha }}
+          BUILD_TIME: ${{ github.event.repository.pushed_at }}
+          GO_VERSION: ${{ env.GO_VERSION }}
+        run: |
+          LDFLAGS="-s -w"
+          LDFLAGS="$LDFLAGS -X ${PKG}/pkg/command.GitCommit=${GIT_COMMIT:0:8}"
+          LDFLAGS="$LDFLAGS -X ${PKG}/pkg/command.BuildTime=${BUILD_TIME}"
+          LDFLAGS="$LDFLAGS -X ${PKG}/pkg/command.GoVersion=go${GO_VERSION}"
+
+          mkdir -p bin
+
+          for target in darwin/amd64 darwin/arm64 linux/amd64 linux/arm64 windows/amd64; do
+            os=${target%%/*}
+            arch=${target##*/}
+            out="bin/pgport_${os}_${arch}"
+            [[ "$os" == "windows" ]] && out="${out}.exe"
+            echo "Building $out"
+            GOOS=$os GOARCH=$arch CGO_ENABLED=0 go build -ldflags "$LDFLAGS" -o "$out"
+          done
+
+          # Extra ARM targets
+          GOOS=linux GOARCH=arm GOARM=5 CGO_ENABLED=0 go build -ldflags "$LDFLAGS" -o bin/pgport_linux_arm_v5
+          GOOS=linux GOARCH=arm GOARM=7 CGO_ENABLED=0 go build -ldflags "$LDFLAGS" -o bin/pgport_linux_arm_v7
+
+      - name: Create checksums
+        run: |
+          cd bin
+          sha256sum * > checksums.txt
+
+      - name: Publish GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: bin/*
+          generate_release_notes: true
+
   docker-release:
     name: Publish Docker images
     runs-on: ubuntu-latest
