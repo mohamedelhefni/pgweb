@@ -1,22 +1,21 @@
-# pgweb
+# pgport
 
-Simple web-based and cross platform PostgreSQL database explorer.
+A fork of [pgweb](https://github.com/sosedoff/pgweb) — the lightweight self-hosted PostgreSQL web client — with keyboard-first navigation, inline data editing, tabbed queries, vim mode, and more.
 
-[![Release](https://img.shields.io/github/release/sosedoff/pgweb.svg?label=Release)](https://github.com/sosedoff/pgweb/releases)
-[![Linux Build](https://github.com/sosedoff/pgweb/actions/workflows/checks.yml/badge.svg)](https://github.com/sosedoff/pgweb/actions?query=branch%3Amain)
-[![Go Report Card](https://goreportcard.com/badge/github.com/sosedoff/pgweb)](https://goreportcard.com/report/github.com/sosedoff/pgweb)
-[![GoDoc](https://pkg.go.dev/badge/github.com/sosedoff/pgweb)](https://pkg.go.dev/github.com/sosedoff/pgweb)
-[![Docker Pulls](https://img.shields.io/docker/pulls/sosedoff/pgweb.svg)](https://hub.docker.com/r/sosedoff/pgweb/)
+## What's new in pgport
 
-## Overview
+On top of everything pgweb already does, pgport adds:
 
-Pgweb is a web-based database explorer for PostgreSQL, written in Go, and works
-on Mac, Linux and Windows machines. Distributed as a simple binary with zero dependencies.
-Very easy to use and packs just the right amount of features.
+- **Command Palette** (`Cmd/Ctrl+P`) — fuzzy-search across all tables, views, and functions. Keyboard-only navigation, no mouse required.
+- **Inline Cell Editing** — double-click any cell in browse mode to edit it. Uses PostgreSQL `ctid` for safe row identity, no primary key assumption.
+- **Add New Row** — form-based interface for inserting rows into any table without writing SQL.
+- **Query Tabs** — multiple SQL editor tabs in the input panel; switch between queries without losing work.
+- **Dark/Light Theme Toggle** — built with CSS custom properties throughout. Instant, no flicker, persisted in `localStorage`.
+- **Vim Keybinding Mode** — full vim bindings in the SQL editor via Ace, persisted in `localStorage`.
+- **JSON Pretty-Print** — JSON column values are automatically formatted when opened in the content modal.
+- **Expandable Schema Rows** — expand any table in the sidebar to preview column names and types inline.
 
-[See application screenshots](SCREENS.md)
-
-## Features
+## Original pgweb features
 
 - Cross-platform: Mac/Linux/Windows (64bit).
 - Simple installation (distributed as a single binary).
@@ -29,80 +28,65 @@ Very easy to use and packs just the right amount of features.
 - Query history.
 - Server bookmarks.
 
-Visit [WIKI](https://github.com/sosedoff/pgweb/wiki) for more details.
-
-## Demo
-
-Visit https://pgweb-demo.fly.dev/ to see Pgweb in action.
-
 ## Installation
 
-- [Precompiled binaries](https://github.com/sosedoff/pgweb/releases) for supported operating systems are available.
-- [More installation options](https://github.com/sosedoff/pgweb/wiki/Installation)
+```
+go install github.com/mohamedelhefni/pgport@latest
+```
+
+Or clone and build:
+
+```
+git clone https://github.com/mohamedelhefni/pgport
+cd pgport
+make build
+```
 
 ## Usage
 
 Start server:
 
 ```
-pgweb
+pgport
 ```
 
-You can also provide connection flags:
+With connection flags:
 
 ```
-pgweb --host localhost --user myuser --db mydb
+pgport --host localhost --user myuser --db mydb
 ```
 
-Connection URL scheme is also supported:
+Connection URL:
 
 ```
-pgweb --url postgres://user:password@host:port/database?sslmode=[mode]
-pgweb --url "postgres:///database?host=/absolute/path/to/unix/socket/dir"
+pgport --url postgres://user:password@host:port/database?sslmode=[mode]
 ```
 
 ### Multiple database sessions
 
-To enable multiple database sessions in pgweb, start the server with:
-
 ```
-pgweb --sessions
+pgport --sessions
 ```
 
-Or set environment variable:
+Or via environment variable:
 
 ```
-PGWEB_SESSIONS=1 pgweb
+PGWEB_SESSIONS=1 pgport
 ```
 
-## Testing
-
-Before running tests, make sure you have PostgreSQL server running on `localhost:5432`
-interface. Also, you must have `postgres` user that could create new databases
-in your local environment. Pgweb server should not be running at the same time.
-
-Execute test suite:
+## Development
 
 ```
-make test
+make dev     # build development binary
+make test    # run test suite (requires PostgreSQL on localhost:5432)
+make lint    # run golangci-lint
 ```
 
-If you're using Docker locally, you might also run pgweb test suite against
-all supported PostgreSQL version with a single command:
+Tests require a live PostgreSQL server on `localhost:5432` with a `postgres` superuser. Set `PGWEB_ASSETS_DEVMODE=1` to serve static files from `./static/` on disk.
 
-```
-make test-all
-```
+## Credits
 
-## Contribute
-
-- Fork this repository
-- Create a new feature branch for a new functionality or bugfix
-- Commit your changes
-- Execute test suite
-- Push your code and open a new pull request
-- Use [issues](https://github.com/sosedoff/pgweb/issues) for any questions
-- Check [wiki](https://github.com/sosedoff/pgweb/wiki) for extra documentation
+pgport is a fork of [sosedoff/pgweb](https://github.com/sosedoff/pgweb). All original work and architecture belong to its author and contributors.
 
 ## License
 

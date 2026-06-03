@@ -10,8 +10,8 @@ Run the backend:
 go run main.go
 ```
 
-Configure pgweb:
+Configure pgport:
 
 ```bash
-pgweb --sessions --connect-backend=http://localhost:4567 --connect-token=test
+pgport --sessions --connect-backend=http://localhost:4567 --connect-token=test
 ```

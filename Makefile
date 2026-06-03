@@ -1,10 +1,10 @@
-PKG = github.com/sosedoff/pgweb
+PKG = github.com/moahmedelhefni/pgport
 GIT_COMMIT ?= $(shell git rev-parse --short=8 HEAD)
 BUILD_TIME ?= $(shell date -u +"%Y-%m-%dT%H:%M:%SZ" | tr -d '\n')
 GO_VERSION ?= $(shell go version | awk {'print $$3'})
 
-DOCKER_RELEASE_TAG = "sosedoff/pgweb:$(shell git describe --abbrev=0 --tags | sed 's/v//')"
-DOCKER_LATEST_TAG = "sosedoff/pgweb:latest"
+DOCKER_RELEASE_TAG = "mohamedelhefni/pgport:$(shell git describe --abbrev=0 --tags | sed 's/v//')"
+DOCKER_LATEST_TAG = "mohamedelhefni/pgport:latest"
 
 LDFLAGS = -s -w
 LDFLAGS += -X $(PKG)/pkg/command.GitCommit=$(GIT_COMMIT)
@@ -39,11 +39,11 @@ lint:
 
 dev:
 	go build
-	@echo "You can now execute ./pgweb"
+	@echo "You can now execute ./pgport"
 
 build:
 	go build -ldflags '${LDFLAGS}'
-	@echo "You can now execute ./pgweb"
+	@echo "You can now execute ./pgport"
 
 install:
 	go install -ldflags '${LDFLAGS}'
@@ -58,10 +58,10 @@ clean:
 	@rm -rf ./pgweb ./bin/*
 
 docker:
-	docker build --no-cache -t pgweb .
+	docker build --no-cache -t pgport .
 
 docker-run:
-	docker run --rm -p 8081:8081 -it pgweb
+	docker run --rm -p 8081:8081 -it pgport
 
 docker-release:
 	docker build --no-cache -t $(DOCKER_RELEASE_TAG) .

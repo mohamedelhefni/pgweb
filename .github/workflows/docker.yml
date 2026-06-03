@@ -8,7 +8,7 @@ on:
 env:
   GO_VERSION: "1.25"
   CGO_ENABLED: 0
-  IMAGE_REPOSITORY: sosedoff/pgweb
+  IMAGE_REPOSITORY: mohamedelhefni/pgport
 
 jobs:
   docker-build:
@@ -31,7 +31,7 @@ jobs:
         with:
           context: .
           push: false
-          tags: pgweb:latest
+          tags: pgport:latest
           platforms: linux/amd64,linux/arm64,linux/arm/v7
           build-args: |
             "CGO_ENABLED=${{ env.CGO_ENABLED }}"

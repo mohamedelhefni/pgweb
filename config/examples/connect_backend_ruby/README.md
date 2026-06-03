@@ -1,6 +1,6 @@
 # connect-backend-ruby
 
-Example Ruby backend for Pgweb Connect feature
+Example Ruby backend for pgport Connect feature
 
 ## Usage
 
@@ -11,8 +11,8 @@ bundle install
 ruby main.rb
 ```
 
-Configure pgweb:
+Configure pgport:
 
 ```bash
-pgweb --sessions --connect-backend=http://localhost:4567 --connect-token=test
+pgport --sessions --connect-backend=http://localhost:4567 --connect-token=test
 ```

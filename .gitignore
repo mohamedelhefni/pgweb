@@ -2,7 +2,7 @@
 .idea
 .env
 .envrc
-pgweb
+pgport
 bin
 tmp/
 cover.out
