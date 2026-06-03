@@ -1,21 +1,42 @@
 # pgport
 
-A fork of [pgport](https://github.com/mohamedelhefni/pgport) — the lightweight self-hosted PostgreSQL web client — with keyboard-first navigation, inline data editing, tabbed queries, vim mode, and more.
+<img src="docs/img/icon.png" alt="pgport" width="48" align="left" style="margin-right: 12px" />
+
+A fork of [pgweb](https://github.com/sosedoff/pgweb) — the lightweight self-hosted PostgreSQL web client — extended with keyboard-first navigation, inline editing, row details sidebar, tabbed queries, vim mode, and more. Thirteen additions, zero new dependencies.
+
+<br clear="left" />
 
 ## What's new in pgport
 
-On top of everything pgport already does, pgport adds:
+### Major additions
 
-- **Command Palette** (`Cmd/Ctrl+P`) — fuzzy-search across all tables, views, and functions. Keyboard-only navigation, no mouse required.
-- **Inline Cell Editing** — double-click any cell in browse mode to edit it. Uses PostgreSQL `ctid` for safe row identity, no primary key assumption.
-- **Add New Row** — form-based interface for inserting rows into any table without writing SQL.
-- **Query Tabs** — multiple SQL editor tabs in the input panel; switch between queries without losing work.
-- **Dark/Light Theme Toggle** — built with CSS custom properties throughout. Instant, no flicker, persisted in `localStorage`.
+- **Command Palette** (`Cmd/Ctrl+P`) — fuzzy-search across all tables, views, and functions simultaneously. Arrow keys to navigate, Enter to open, Escape to dismiss. No mouse required.
+- **Inline Cell Editing** — double-click any cell in browse mode to edit it. Uses PostgreSQL `ctid` for safe row identity; works on any table, primary key or not.
+- **Row Details Sidebar** — click any row to open a persistent detail panel. JSON values render formatted, timestamps stay readable, booleans and nulls display clearly. Non-modal: stays open while you browse other rows.
+- **Favorites** — star any table to pin it to the top of the connection sidebar for one-click access.
+- **Dark/Light Theme Toggle** — built with CSS custom properties throughout. Instant switch, no flicker, persisted in `localStorage`.
 - **Vim Keybinding Mode** — full vim bindings in the SQL editor via Ace, persisted in `localStorage`.
-- **JSON Pretty-Print** — JSON column values are automatically formatted when opened in the content modal.
-- **Expandable Schema Rows** — expand any table in the sidebar to preview column names and types inline.
 
-## Original pgport features
+### Also included
+
+- **Query Tabs** — multiple SQL editor tabs; switch between queries without losing work.
+- **Expandable Schema Browser** — expand any table in the sidebar to see column names and types inline.
+- **JSON Pretty-Print** — JSON column values automatically formatted in the content modal.
+- **Add New Row** — form-based interface for inserting rows into any table without writing SQL.
+- **Ace Editor Content View** — content modal uses Ace with syntax highlighting, SQL formatter, and live validation.
+- **SQL Autocomplete** — table and column name completions in the query editor; updates when you switch connections.
+- **Connection Sidebar** — persistent sidebar for switching between open connections; favorites appear at the top.
+- **History & Shortcuts** — fuzzy-search full query history (`Ctrl+H`); open keyboard shortcuts reference (`?`).
+
+### Docker image size
+
+Switched to a minimal scratch base image — no shell, no extra runtime, just the Go binary and embedded static assets.
+
+```
+224 MB → 25 MB   (9× smaller)
+```
+
+## Original pgweb features
 
 - Cross-platform: Mac/Linux/Windows (64bit).
 - Simple installation (distributed as a single binary).
@@ -40,6 +61,12 @@ Or clone and build:
 git clone https://github.com/mohamedelhefni/pgport
 cd pgport
 make build
+```
+
+Or via Docker:
+
+```
+docker run --rm -p 8081:8081 -it mohamedelhefni/pgport
 ```
 
 ## Usage
@@ -86,7 +113,7 @@ Tests require a live PostgreSQL server on `localhost:5432` with a `postgres` sup
 
 ## Credits
 
-pgport is a fork of [mohamedelhefni/pgport](https://github.com/mohamedelhefni/pgport). All original work and architecture belong to its author and contributors.
+pgport is a fork of [sosedoff/pgweb](https://github.com/sosedoff/pgweb). All original work and architecture belong to its author and contributors.
 
 ## License
 
