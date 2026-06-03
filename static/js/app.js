@@ -1487,6 +1487,7 @@ function bindDatabaseObjectsFilter() {
     }
 
     $(".clear-objects-filter").show();
+    $(".schema:not(.expanded)").addClass("expanded search-expanded");
     $(".schema-group").addClass("expanded");
 
     filterTimeout = setTimeout(function() {
@@ -1501,20 +1502,30 @@ function bindDatabaseObjectsFilter() {
 
 function resetObjectsFilter() {
   $("#filter_database_objects").val("");
-  $("#objects li.schema-item").show();
+  $("#objects li.schema-item, #objects .schema-group").removeClass("filter-hidden");
   $(".clear-objects-filter").hide();
+  $(".search-expanded").removeClass("expanded search-expanded");
 }
 
 function filterObjectsByName(query) {
+  var lowerQuery = query.toLowerCase();
+
   $("#objects li.schema-item").each(function (idx, el) {
     var item = $(el);
-    var name = $(el).data("name");
+    var name = String($(el).data("name") || "").toLowerCase();
 
-    if (name.indexOf(query) < 0) {
-      item.hide();
+    if (name.indexOf(lowerQuery) < 0) {
+      item.addClass("filter-hidden");
     } else {
-      item.show();
+      item.removeClass("filter-hidden");
     }
+  });
+
+  // Hide schema-group headers when all their items are filtered out
+  $("#objects .schema-group").each(function (idx, el) {
+    var group = $(el);
+    var hasVisible = group.find("li.schema-item:not(.filter-hidden)").length > 0;
+    group.toggleClass("filter-hidden", !hasVisible);
   });
 }
 

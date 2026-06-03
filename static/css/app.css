@@ -425,7 +425,7 @@ a:hover {
   bottom: 0;
   height: 108px;
   border-top: 1px solid var(--border-subtle);
-  overflow: hidden;
+  overflow: scroll;
 }
 
 #sidebar div.table-information .wrap {
@@ -618,10 +618,15 @@ a:hover {
   color: var(--accent);
 }
 
-.schema-item {
-  display: block !important;
-  height: auto !important;
-  padding: 0 !important;
+.schema .schema-container .schema-group ul li.schema-item {
+  display: block;
+  height: auto;
+  padding: 0;
+}
+
+.schema-item.filter-hidden,
+.schema-group.filter-hidden {
+  display: none !important;
 }
 
 .schema-item-toggle {
@@ -861,6 +866,7 @@ a:hover {
   bottom: 3px; /* above resize handle */
   left: 0;
   right: 0;
+  z-index: 99;
 }
 
 #input .actions .pull-right {
