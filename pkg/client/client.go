@@ -12,7 +12,7 @@ import (
 	"time"
 
 	"github.com/jmoiron/sqlx"
-	_ "github.com/lib/pq"
+	pq "github.com/lib/pq"
 
 	"github.com/sosedoff/pgweb/pkg/bookmarks"
 	"github.com/sosedoff/pgweb/pkg/command"
@@ -464,6 +464,27 @@ func (client *Client) Query(query string) (*Result, error) {
 	}
 
 	return res, err
+}
+
+// ValidateQuery checks SQL syntax by preparing the statement without executing it.
+// Returns the 1-based character position of the error (0 if unknown) and the error.
+func (client *Client) ValidateQuery(query string) (int, error) {
+	ctx, cancel := client.context()
+	defer cancel()
+
+	stmt, err := client.db.PrepareContext(ctx, query)
+	if err != nil {
+		if pqErr, ok := err.(*pq.Error); ok {
+			pos := 0
+			if pqErr.Position != "" {
+				fmt.Sscanf(pqErr.Position, "%d", &pos)
+			}
+			return pos, errors.New(pqErr.Message)
+		}
+		return 0, err
+	}
+	stmt.Close()
+	return 0, nil
 }
 
 func (client *Client) SetReadOnlyMode() error {

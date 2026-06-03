@@ -344,6 +344,28 @@ func AnalyzeQuery(c *gin.Context) {
 	HandleQuery(fmt.Sprintf("EXPLAIN ANALYZE %s", query), c)
 }
 
+// ValidateQuery checks SQL syntax without executing the query
+func ValidateQuery(c *gin.Context) {
+	query := cleanQuery(c.Request.FormValue("query"))
+
+	if query == "" {
+		badRequest(c, errQueryRequired)
+		return
+	}
+
+	pos, err := DB(c).ValidateQuery(query)
+	if err != nil {
+		resp := gin.H{"error": err.Error()}
+		if pos > 0 {
+			resp["position"] = pos
+		}
+		c.JSON(http.StatusBadRequest, resp)
+		return
+	}
+
+	successResponse(c, gin.H{"valid": true})
+}
+
 // GetDatabases renders a list of all databases on the server
 func GetDatabases(c *gin.Context) {
 	if command.Opts.LockSession {

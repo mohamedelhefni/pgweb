@@ -61,11 +61,20 @@
                     <li id="table_constraints">Constraints</li>
                     <li id="table_query" class="selected">Query</li>
                     <li id="table_history">History</li>
+                    <li id="table_favorites">Favorites</li>
                     <li id="table_activity">Activity</li>
                     <li id="table_connection">Connection</li>
                 </ul>
 
                 <div class="nav-right">
+                    <!--<button
+                        id="settings_btn"
+                        class="btn-icon"
+                        title="Settings"
+                        aria-label="Settings"
+                    >
+                        <i class="fa fa-cog"></i>
+                    </button>-->
                     <button
                         id="theme_toggle"
                         class="btn-icon"
@@ -157,10 +166,18 @@
                         <button id="add-query-tab" title="New tab">
                             <i class="fa fa-plus"></i>
                         </button>
+                        <button
+                            id="query-tab-settings"
+                            class="btn-icon"
+                            title="Editor settings"
+                        >
+                            <i class="fa fa-cog"></i>
+                        </button>
                     </div>
                     <div class="input-wrapper">
                         <div id="custom_query"></div>
                     </div>
+                    <div id="validation-status"></div>
                     <div class="actions">
                         <input
                             type="button"
@@ -186,41 +203,14 @@
                                 </li>
                             </ul>
                         </div>
-                        <div id="editor-dropdown" class="btn-group left">
-                            <button
-                                type="button"
-                                class="btn btn-default dropdown-toggle"
-                                data-toggle="dropdown"
-                                title="Editor mode"
-                            >
-                                <i class="fa fa-keyboard-o"></i>
-                                <span class="caret"></span>
-                            </button>
-                            <ul class="dropdown-menu" role="menu">
-                                <li class="active" id="norm-mode">
-                                    <a href="#">Normal</a>
-                                </li>
-                                <li id="vim-mode"><a href="#">Vim</a></li>
-                            </ul>
-                        </div>
                         <button
                             id="format-query"
                             type="button"
                             class="btn btn-default btn-sm"
                             title="Format SQL query"
-                        ><i class="fa fa-indent"></i> Format</button>
-                        <button
-                            id="save-favorite"
-                            type="button"
-                            class="btn btn-default btn-sm"
-                            title="Save query as favorite (Ctrl+Shift+S)"
-                        ><i class="fa fa-star-o"></i></button>
-                        <button
-                            id="open-favorites"
-                            type="button"
-                            class="btn btn-default btn-sm"
-                            title="Browse favorites (Ctrl+Shift+F on all platforms)"
-                        ><i class="fa fa-bookmark-o"></i> Favorites</button>
+                        >
+                            <i class="fa fa-indent"></i> Format
+                        </button>
                         <div
                             id="load-query-dropdown"
                             class="btn-group left"
@@ -263,6 +253,24 @@
                         </div>
                     </div>
                     <div id="input_resize_handler"></div>
+                </div>
+                <div id="favorites_panel">
+                    <div class="fav-panel-header">
+                        <div class="fav-panel-title">
+                            <i class="fa fa-star"></i> Favorites
+                            <span class="fav-panel-count"></span>
+                        </div>
+                        <div class="fav-panel-search-wrap">
+                            <i class="fa fa-search fav-panel-search-icon"></i>
+                            <input
+                                type="text"
+                                id="fav-panel-search"
+                                placeholder="Search favorites..."
+                                autocomplete="off"
+                            />
+                        </div>
+                    </div>
+                    <div id="fav-panel-list"></div>
                 </div>
                 <div id="output">
                     <div class="wrapper">
@@ -367,7 +375,11 @@
                 </div>
             </div>
             <div id="content_modal_ace_view" class="content"></div>
-            <div id="content_modal_ace_edit" class="content content-edit" style="display: none"></div>
+            <div
+                id="content_modal_ace_edit"
+                class="content content-edit"
+                style="display: none"
+            ></div>
         </div>
 
         <div id="finder_overlay"></div>
@@ -472,6 +484,57 @@
 
         <button id="shortcuts_btn" title="Keyboard shortcuts">?</button>
 
+        <div id="settings_overlay"></div>
+
+        <div id="settings_modal">
+            <div class="settings-header">
+                Settings
+                <button id="settings-close" class="btn-icon" title="Close">
+                    <i class="fa fa-times"></i>
+                </button>
+            </div>
+            <div class="settings-body">
+                <div class="settings-section">
+                    <div class="settings-section-title">Editor</div>
+                    <label class="settings-row">
+                        <div class="settings-label">
+                            <div class="settings-label-title">
+                                Vim keybinding
+                            </div>
+                            <div class="settings-label-desc">
+                                Enable Vim mode in the SQL editor
+                            </div>
+                        </div>
+                        <div class="toggle-switch">
+                            <input type="checkbox" id="settings-vim-mode" />
+                            <span class="toggle-slider"></span>
+                        </div>
+                    </label>
+                </div>
+                <div class="settings-section">
+                    <div class="settings-section-title">Validation</div>
+                    <label class="settings-row">
+                        <div class="settings-label">
+                            <div class="settings-label-title">
+                                SQL syntax validation
+                            </div>
+                            <div class="settings-label-desc">
+                                Highlight errors as you type (instant +
+                                server-side)
+                            </div>
+                        </div>
+                        <div class="toggle-switch">
+                            <input
+                                type="checkbox"
+                                id="settings-syntax-validation"
+                            />
+                            <span class="toggle-slider"></span>
+                        </div>
+                    </label>
+                </div>
+            </div>
+        </div>
+
         <div id="connection_window">
             <div class="connection-page-header">
                 <h1>pgport</h1>
@@ -483,280 +546,305 @@
                     <div class="conn-sidebar-header">Connections</div>
                     <div class="conn-sidebar-section">
                         <div class="conn-sidebar-label">Saved</div>
-                        <div id="saved_connections_list"><div class="conn-sidebar-empty">No saved connections</div></div>
+                        <div id="saved_connections_list">
+                            <div class="conn-sidebar-empty">
+                                No saved connections
+                            </div>
+                        </div>
                     </div>
                     <div class="conn-sidebar-section">
                         <div class="conn-sidebar-label">Recent</div>
-                        <div id="recent_connections_list"><div class="conn-sidebar-empty">No recent connections</div></div>
+                        <div id="recent_connections_list">
+                            <div class="conn-sidebar-empty">
+                                No recent connections
+                            </div>
+                        </div>
                     </div>
                 </div>
-            <div class="connection-settings">
-                <form role="form" class="form-horizontal" id="connection_form">
-                    <div class="text-center">
-                        <div
-                            class="btn-group btn-group-sm connection-group-switch"
-                        >
-                            <button
-                                type="button"
-                                data="scheme"
-                                class="btn btn-default"
-                                id="connection_scheme"
+                <div class="connection-settings">
+                    <form
+                        role="form"
+                        class="form-horizontal"
+                        id="connection_form"
+                    >
+                        <div class="text-center">
+                            <div
+                                class="btn-group btn-group-sm connection-group-switch"
                             >
-                                Scheme
-                            </button>
-                            <button
-                                type="button"
-                                data="standard"
-                                class="btn btn-default active"
-                                id="connection_standard"
-                            >
-                                Standard
-                            </button>
-                            <button
-                                type="button"
-                                data="ssh"
-                                class="btn btn-default"
-                                id="connection_ssh"
-                            >
-                                SSH
-                            </button>
-                        </div>
-                    </div>
-
-                    <hr />
-
-                    <div class="connection-scheme-group">
-                        <div class="form-group">
-                            <div class="col-sm-12">
-                                <label>Enter server URL scheme</label>
-                                <input
-                                    type="text"
-                                    class="form-control"
-                                    id="connection_url"
-                                    name="url"
-                                    autocomplete="off"
-                                />
-                                <p class="help-block">
-                                    URL format:
-                                    postgres://user:password@host:port/db?sslmode=mode<br />
-                                    Read more on PostgreSQL
-                                    <a
-                                        href="https://www.postgresql.org/docs/current/static/libpq-connect.html#LIBPQ-CONNSTRING"
-                                        target="_blank"
-                                        >connection string format</a
-                                    >.
-                                </p>
+                                <button
+                                    type="button"
+                                    data="scheme"
+                                    class="btn btn-default"
+                                    id="connection_scheme"
+                                >
+                                    Scheme
+                                </button>
+                                <button
+                                    type="button"
+                                    data="standard"
+                                    class="btn btn-default active"
+                                    id="connection_standard"
+                                >
+                                    Standard
+                                </button>
+                                <button
+                                    type="button"
+                                    data="ssh"
+                                    class="btn btn-default"
+                                    id="connection_ssh"
+                                >
+                                    SSH
+                                </button>
                             </div>
                         </div>
-                    </div>
 
-                    <div class="connection-bookmarks-group">
-                        <div class="form-group bookmarks">
-                            <label class="col-sm-3 control-label"
-                                >Bookmark</label
-                            >
-                            <div class="col-sm-9">
-                                <select
-                                    class="form-control"
-                                    id="connection_bookmarks"
-                                ></select>
-                            </div>
-                        </div>
-                    </div>
+                        <hr />
 
-                    <div class="connection-standard-group">
-                        <div class="form-group">
-                            <label class="col-sm-3 control-label">Host</label>
-                            <div class="col-sm-9">
-                                <div class="row">
-                                    <div class="col-sm-9 col-xs-9">
-                                        <input
-                                            type="text"
-                                            id="pg_host"
-                                            class="form-control"
-                                        />
-                                    </div>
-                                    <div
-                                        class="col-sm-3 col-xs-3 no-left-padding"
-                                    >
-                                        <input
-                                            type="text"
-                                            id="pg_port"
-                                            class="form-control"
-                                            placeholder="5432"
-                                        />
-                                    </div>
+                        <div class="connection-scheme-group">
+                            <div class="form-group">
+                                <div class="col-sm-12">
+                                    <label>Enter server URL scheme</label>
+                                    <input
+                                        type="text"
+                                        class="form-control"
+                                        id="connection_url"
+                                        name="url"
+                                        autocomplete="off"
+                                    />
+                                    <p class="help-block">
+                                        URL format:
+                                        postgres://user:password@host:port/db?sslmode=mode<br />
+                                        Read more on PostgreSQL
+                                        <a
+                                            href="https://www.postgresql.org/docs/current/static/libpq-connect.html#LIBPQ-CONNSTRING"
+                                            target="_blank"
+                                            >connection string format</a
+                                        >.
+                                    </p>
                                 </div>
                             </div>
                         </div>
 
-                        <div class="form-group">
-                            <label class="col-sm-3 control-label"
-                                >Username</label
-                            >
-                            <div class="col-sm-9">
-                                <input
-                                    type="text"
-                                    id="pg_user"
-                                    class="form-control"
-                                />
-                            </div>
-                        </div>
-
-                        <div class="form-group">
-                            <label class="col-sm-3 control-label"
-                                >Password</label
-                            >
-                            <div class="col-sm-9">
-                                <input
-                                    type="password"
-                                    id="pg_password"
-                                    class="form-control"
-                                />
-                            </div>
-                        </div>
-
-                        <div class="form-group">
-                            <label class="col-sm-3 control-label"
-                                >Database</label
-                            >
-                            <div class="col-sm-9">
-                                <input
-                                    type="text"
-                                    id="pg_db"
-                                    class="form-control"
-                                />
-                            </div>
-                        </div>
-
-                        <div class="form-group">
-                            <label class="col-sm-3 control-label"
-                                >SSL Mode</label
-                            >
-                            <div class="col-sm-9">
-                                <select
-                                    class="form-control"
-                                    id="connection_ssl"
+                        <div class="connection-bookmarks-group">
+                            <div class="form-group bookmarks">
+                                <label class="col-sm-3 control-label"
+                                    >Bookmark</label
                                 >
-                                    <option value="disable">disable</option>
-                                    <option value="require" selected="selected">
-                                        require
-                                    </option>
-                                    <option value="verify-full">
-                                        verify-full
-                                    </option>
-                                </select>
+                                <div class="col-sm-9">
+                                    <select
+                                        class="form-control"
+                                        id="connection_bookmarks"
+                                    ></select>
+                                </div>
                             </div>
                         </div>
-                    </div>
 
-                    <div class="connection-ssh-group">
-                        <hr />
+                        <div class="connection-standard-group">
+                            <div class="form-group">
+                                <label class="col-sm-3 control-label"
+                                    >Host</label
+                                >
+                                <div class="col-sm-9">
+                                    <div class="row">
+                                        <div class="col-sm-9 col-xs-9">
+                                            <input
+                                                type="text"
+                                                id="pg_host"
+                                                class="form-control"
+                                            />
+                                        </div>
+                                        <div
+                                            class="col-sm-3 col-xs-3 no-left-padding"
+                                        >
+                                            <input
+                                                type="text"
+                                                id="pg_port"
+                                                class="form-control"
+                                                placeholder="5432"
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
 
-                        <h3 class="text-center">SSH Connection</h3>
+                            <div class="form-group">
+                                <label class="col-sm-3 control-label"
+                                    >Username</label
+                                >
+                                <div class="col-sm-9">
+                                    <input
+                                        type="text"
+                                        id="pg_user"
+                                        class="form-control"
+                                    />
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="col-sm-3 control-label"
+                                    >Password</label
+                                >
+                                <div class="col-sm-9">
+                                    <input
+                                        type="password"
+                                        id="pg_password"
+                                        class="form-control"
+                                    />
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="col-sm-3 control-label"
+                                    >Database</label
+                                >
+                                <div class="col-sm-9">
+                                    <input
+                                        type="text"
+                                        id="pg_db"
+                                        class="form-control"
+                                    />
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="col-sm-3 control-label"
+                                    >SSL Mode</label
+                                >
+                                <div class="col-sm-9">
+                                    <select
+                                        class="form-control"
+                                        id="connection_ssl"
+                                    >
+                                        <option value="disable">disable</option>
+                                        <option
+                                            value="require"
+                                            selected="selected"
+                                        >
+                                            require
+                                        </option>
+                                        <option value="verify-full">
+                                            verify-full
+                                        </option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="connection-ssh-group">
+                            <hr />
+
+                            <h3 class="text-center">SSH Connection</h3>
+
+                            <div class="form-group">
+                                <label class="col-sm-3 control-label"
+                                    >Host</label
+                                >
+                                <div class="col-sm-7">
+                                    <input
+                                        type="text"
+                                        id="ssh_host"
+                                        class="form-control"
+                                    />
+                                </div>
+                                <div class="col-sm-2 no-left-padding">
+                                    <input
+                                        type="text"
+                                        id="ssh_port"
+                                        class="form-control"
+                                        placeholder="22"
+                                    />
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="col-sm-3 control-label"
+                                    >Credentials</label
+                                >
+                                <div class="col-sm-5">
+                                    <input
+                                        type="text"
+                                        id="ssh_user"
+                                        class="form-control"
+                                        placeholder="Username"
+                                    />
+                                </div>
+                                <div class="col-sm-4 no-left-padding">
+                                    <input
+                                        type="password"
+                                        id="ssh_password"
+                                        class="form-control"
+                                        placeholder="Password"
+                                    />
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="col-sm-3 control-label"
+                                    >Auth Key</label
+                                >
+                                <div class="col-sm-5">
+                                    <input
+                                        type="text"
+                                        id="ssh_key"
+                                        class="form-control"
+                                        placeholder="Key path"
+                                    />
+                                </div>
+                                <div class="col-sm-4 no-left-padding">
+                                    <input
+                                        type="password"
+                                        id="ssh_key_password"
+                                        class="form-control"
+                                        placeholder="Key password"
+                                    />
+                                </div>
+                            </div>
+
+                            <hr />
+                        </div>
+
+                        <div
+                            id="connection_error"
+                            class="alert alert-danger"
+                        ></div>
+
+                        <div id="save_connection_group" class="form-group">
+                            <div class="col-sm-12">
+                                <label class="save-connection-toggle">
+                                    <input
+                                        type="checkbox"
+                                        id="save_connection_checkbox"
+                                    />
+                                    Save this connection
+                                </label>
+                                <input
+                                    type="text"
+                                    id="save_connection_name"
+                                    class="form-control save-connection-name"
+                                    placeholder="Connection name (e.g. Production DB)"
+                                />
+                            </div>
+                        </div>
 
                         <div class="form-group">
-                            <label class="col-sm-3 control-label">Host</label>
-                            <div class="col-sm-7">
-                                <input
-                                    type="text"
-                                    id="ssh_host"
-                                    class="form-control"
-                                />
-                            </div>
-                            <div class="col-sm-2 no-left-padding">
-                                <input
-                                    type="text"
-                                    id="ssh_port"
-                                    class="form-control"
-                                    placeholder="22"
-                                />
-                            </div>
-                        </div>
-
-                        <div class="form-group">
-                            <label class="col-sm-3 control-label"
-                                >Credentials</label
-                            >
-                            <div class="col-sm-5">
-                                <input
-                                    type="text"
-                                    id="ssh_user"
-                                    class="form-control"
-                                    placeholder="Username"
-                                />
-                            </div>
-                            <div class="col-sm-4 no-left-padding">
-                                <input
-                                    type="password"
-                                    id="ssh_password"
-                                    class="form-control"
-                                    placeholder="Password"
-                                />
+                            <div class="col-sm-12">
+                                <button
+                                    type="submit"
+                                    class="btn btn-block btn-primary open-connection"
+                                >
+                                    Connect
+                                </button>
+                                <button
+                                    type="button"
+                                    id="close_connection_window"
+                                    class="btn btn-block btn-default"
+                                >
+                                    Cancel
+                                </button>
                             </div>
                         </div>
-
-                        <div class="form-group">
-                            <label class="col-sm-3 control-label"
-                                >Auth Key</label
-                            >
-                            <div class="col-sm-5">
-                                <input
-                                    type="text"
-                                    id="ssh_key"
-                                    class="form-control"
-                                    placeholder="Key path"
-                                />
-                            </div>
-                            <div class="col-sm-4 no-left-padding">
-                                <input
-                                    type="password"
-                                    id="ssh_key_password"
-                                    class="form-control"
-                                    placeholder="Key password"
-                                />
-                            </div>
-                        </div>
-
-                        <hr />
-                    </div>
-
-                    <div id="connection_error" class="alert alert-danger"></div>
-
-                    <div id="save_connection_group" class="form-group">
-                        <div class="col-sm-12">
-                            <label class="save-connection-toggle">
-                                <input type="checkbox" id="save_connection_checkbox">
-                                Save this connection
-                            </label>
-                            <input
-                                type="text"
-                                id="save_connection_name"
-                                class="form-control save-connection-name"
-                                placeholder="Connection name (e.g. Production DB)"
-                            />
-                        </div>
-                    </div>
-
-                    <div class="form-group">
-                        <div class="col-sm-12">
-                            <button
-                                type="submit"
-                                class="btn btn-block btn-primary open-connection"
-                            >
-                                Connect
-                            </button>
-                            <button
-                                type="button"
-                                id="close_connection_window"
-                                class="btn btn-block btn-default"
-                            >
-                                Cancel
-                            </button>
-                        </div>
-                    </div>
-                </form>
-            </div>
+                    </form>
+                </div>
             </div>
         </div>
         <div id="tables_context_menu">
@@ -869,7 +957,10 @@
                 </li>
                 <li class="divider"></li>
                 <li>
-                    <a href="#" data-action="delete_row" style="color: var(--error)"
+                    <a
+                        href="#"
+                        data-action="delete_row"
+                        style="color: var(--error)"
                         >Delete Row</a
                     >
                 </li>
@@ -879,13 +970,26 @@
             <div id="row_sidebar_resize_handle"></div>
             <div class="row-sidebar-header">
                 Row Details
-                <button id="row_sidebar_close_x" class="btn-icon" title="Close"><i class="fa fa-times"></i></button>
+                <button id="row_sidebar_close_x" class="btn-icon" title="Close">
+                    <i class="fa fa-times"></i>
+                </button>
             </div>
             <div id="row_sidebar_fields"></div>
             <div class="row-sidebar-footer">
-                <div id="row_sidebar_error" class="alert alert-danger" style="display:none"></div>
-                <button id="row_sidebar_save" class="btn btn-sm btn-primary">Save</button>
-                <button id="row_sidebar_close_btn" class="btn btn-sm btn-default">Close</button>
+                <div
+                    id="row_sidebar_error"
+                    class="alert alert-danger"
+                    style="display: none"
+                ></div>
+                <button id="row_sidebar_save" class="btn btn-sm btn-primary">
+                    Save
+                </button>
+                <button
+                    id="row_sidebar_close_btn"
+                    class="btn btn-sm btn-default"
+                >
+                    Close
+                </button>
             </div>
         </div>
 
@@ -898,10 +1002,14 @@
 
                 function applyAceTheme(theme) {
                     if (window.editor) window.editor.setTheme(theme);
-                    if (window.contentViewEditor) window.contentViewEditor.setTheme(theme);
-                    if (window.contentEditEditor) window.contentEditEditor.setTheme(theme);
+                    if (window.contentViewEditor)
+                        window.contentViewEditor.setTheme(theme);
+                    if (window.contentEditEditor)
+                        window.contentEditEditor.setTheme(theme);
                     if (window.rowSidebarEditors) {
-                        window.rowSidebarEditors.forEach(function(ed) { ed.setTheme(theme); });
+                        window.rowSidebarEditors.forEach(function (ed) {
+                            ed.setTheme(theme);
+                        });
                     }
                 }
 

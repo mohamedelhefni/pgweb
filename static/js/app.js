@@ -1,5 +1,6 @@
 var appInfo = {};
 var appFeatures = {};
+var appSettings = { vimMode: false, syntaxValidation: true };
 var editor = null;
 var contentViewEditor = null;
 var contentEditEditor = null;
@@ -1084,6 +1085,11 @@ function setCurrentTab(id) {
     $("#body").removeClass("with-pagination");
   }
 
+  // Hide favorites inline panel when switching away
+  if (id !== "table_favorites") {
+    $("#favorites_panel").hide();
+  }
+
   $("#nav ul li.selected").removeClass("selected");
   $("#" + id).addClass("selected");
 
@@ -1556,6 +1562,235 @@ function runFormatQuery() {
   editor.setValue(formatted, -1);
 }
 
+// SQL syntax validation (server-side, debounced)
+var validateTimer = null;
+
+// ----------------------------------------------------------------
+// Tier-1: client-side structural validator
+//
+// Walks the SQL character-by-character, tracking:
+//   - line comments (--)
+//   - block comments (/* ... */)
+//   - single- and double-quoted strings (with '' / "" escaping)
+//   - dollar-quoted strings ($$...$$  or  $tag$...$tag$)
+//   - parenthesis nesting
+//
+// Returns [] when clean, or [{row, col, message}] for each error.
+// ----------------------------------------------------------------
+function validateSQLSyntax(sql) {
+  var errors = [];
+  var len = sql.length;
+  var i = 0;
+  var row = 0, col = 0;
+
+  var inLineComment   = false;
+  var inBlockComment  = false;
+  var inString        = false;
+  var stringChar      = null;
+  var stringRow = 0,  stringCol = 0;
+  var inDollarQuote   = false;
+  var dollarTag       = "";
+  var dollarRow = 0,  dollarCol = 0;
+  var parenStack      = [];          // [{row, col}]
+
+  function peek(offset) {
+    return i + offset < len ? sql[i + offset] : "";
+  }
+
+  // Try to read a dollar-quote tag starting at position i (the first $).
+  // Returns the full tag (e.g. "$$" or "$func$") or null if it's not a
+  // valid dollar-quote opener.
+  function readDollarTag() {
+    var j = i + 1;
+    while (j < len && sql[j] !== "$" && sql[j] !== "\n" &&
+           (sql[j] === "_" || /[a-zA-Z0-9_]/.test(sql[j]))) {
+      j++;
+    }
+    if (j < len && sql[j] === "$") {
+      return sql.slice(i, j + 1); // e.g. "$$" or "$func$"
+    }
+    return null;
+  }
+
+  while (i < len) {
+    var ch = sql[i];
+
+    // ── line comment ──────────────────────────────────────────────
+    if (inLineComment) {
+      if (ch === "\n") { inLineComment = false; row++; col = 0; }
+      else              col++;
+      i++; continue;
+    }
+
+    // ── block comment ─────────────────────────────────────────────
+    if (inBlockComment) {
+      if (ch === "*" && peek(1) === "/") {
+        inBlockComment = false;
+        col += 2; i += 2;
+      } else if (ch === "\n") { row++; col = 0; i++; }
+      else                    { col++;          i++; }
+      continue;
+    }
+
+    // ── dollar-quoted string ──────────────────────────────────────
+    if (inDollarQuote) {
+      if (ch === "$" && sql.slice(i, i + dollarTag.length) === dollarTag) {
+        inDollarQuote = false;
+        col += dollarTag.length;
+        i   += dollarTag.length;
+      } else if (ch === "\n") { row++; col = 0; i++; }
+      else                    { col++;          i++; }
+      continue;
+    }
+
+    // ── quoted string ─────────────────────────────────────────────
+    if (inString) {
+      if (ch === "\\" && stringChar === '"') {
+        // standard_conforming_strings is on by default; backslash
+        // escapes only in E'' strings, but for the sake of the client
+        // validator just skip the next char.
+        col += 2; i += 2;
+      } else if (ch === stringChar && peek(1) === stringChar) {
+        col += 2; i += 2;          // '' or "" → escaped quote
+      } else if (ch === stringChar) {
+        inString = false; col++; i++;
+      } else if (ch === "\n") { row++; col = 0; i++; }
+      else                    { col++;          i++; }
+      continue;
+    }
+
+    // ── normal context ────────────────────────────────────────────
+
+    // Line comment
+    if (ch === "-" && peek(1) === "-") {
+      inLineComment = true; col += 2; i += 2; continue;
+    }
+
+    // Block comment
+    if (ch === "/" && peek(1) === "*") {
+      inBlockComment = true; col += 2; i += 2; continue;
+    }
+
+    // Dollar quote
+    if (ch === "$") {
+      var tag = readDollarTag();
+      if (tag !== null) {
+        inDollarQuote = true;
+        dollarTag  = tag;
+        dollarRow  = row; dollarCol = col;
+        col += tag.length; i += tag.length; continue;
+      }
+    }
+
+    // Single / double quoted string
+    if (ch === "'" || ch === '"') {
+      inString    = true;
+      stringChar  = ch;
+      stringRow   = row; stringCol = col;
+      col++; i++; continue;
+    }
+
+    // Parentheses
+    if (ch === "(") {
+      parenStack.push({ row: row, col: col });
+      col++; i++; continue;
+    }
+    if (ch === ")") {
+      if (parenStack.length === 0) {
+        errors.push({ row: row, col: col, message: "Unexpected ')'" });
+      } else {
+        parenStack.pop();
+      }
+      col++; i++; continue;
+    }
+
+    if (ch === "\n") { row++; col = 0; } else { col++; }
+    i++;
+  }
+
+  // Unclosed constructs
+  if (inString) {
+    errors.push({ row: stringRow, col: stringCol,
+                  message: "Unterminated string literal" });
+  }
+  if (inDollarQuote) {
+    errors.push({ row: dollarRow, col: dollarCol,
+                  message: "Unterminated dollar-quoted string (" + dollarTag + ")" });
+  }
+  if (inBlockComment) {
+    errors.push({ row: 0, col: 0, message: "Unterminated block comment" });
+  }
+  parenStack.forEach(function (p) {
+    errors.push({ row: p.row, col: p.col, message: "Unclosed parenthesis '('" });
+  });
+
+  return errors;
+}
+
+function charPosToRowCol(sql, charPos) {
+  if (!charPos || charPos <= 0) return { row: 0, col: 0 };
+  var before = sql.substring(0, charPos - 1); // charPos is 1-based
+  var lines = before.split("\n");
+  return { row: lines.length - 1, col: lines[lines.length - 1].length };
+}
+
+function setValidationError(message, pos) {
+  var annotations = [];
+  if (pos > 0) {
+    var rc = charPosToRowCol(editor.getValue(), pos);
+    annotations.push({ row: rc.row, column: rc.col, text: message, type: "error" });
+  }
+  editor.session.setAnnotations(annotations);
+  $("#validation-status").text("\u26a0 " + message).show();
+}
+
+function clearValidationState() {
+  if (editor) editor.session.setAnnotations([]);
+  $("#validation-status").hide();
+}
+
+function validateEditorQuery() {
+  var sql = editor.getValue().trim();
+  if (!sql) {
+    clearValidationState();
+    return;
+  }
+  apiCall("post", "/validate", { query: sql }, function (data) {
+    if (data.error) {
+      setValidationError(data.error, data.position || 0);
+    } else {
+      clearValidationState();
+    }
+  });
+}
+
+function scheduleValidation() {
+  if (!appSettings.syntaxValidation) {
+    clearValidationState();
+    return;
+  }
+
+  clearTimeout(validateTimer);
+
+  var sql = editor.getValue().trim();
+  if (!sql) {
+    clearValidationState();
+    return;
+  }
+
+  // Tier-1: instant client-side structural check
+  var clientErrors = validateSQLSyntax(sql);
+  if (clientErrors.length > 0) {
+    editor.session.setAnnotations(clientErrors.map(function (e) {
+      return { row: e.row, column: e.col, text: e.message, type: "error" };
+    }));
+    $("#validation-status").text("\u26a0 " + clientErrors[0].message).show();
+  }
+
+  // Tier-2: server-side PostgreSQL parse (authoritative, replaces tier-1 result)
+  validateTimer = setTimeout(validateEditorQuery, 700);
+}
+
 function runQuery() {
   setCurrentTab("table_query");
   showQueryProgressMessage();
@@ -1863,6 +2098,7 @@ function switchQueryTab(id) {
     editor.setValue(tab.query || "");
     editor.clearSelection();
     editor.focus();
+    clearValidationState();
   }
 }
 
@@ -2003,6 +2239,8 @@ function initEditor() {
         saveQueryTabs();
       }
     }, 1000);
+
+    scheduleValidation();
   });
 
   if (lastSelectedMode == "ace/keyboard/vim") {
@@ -2629,6 +2867,20 @@ function initHistoryFinder() {
 }
 
 var FAVORITES_KEY = "pgweb_favorite_queries";
+var SETTINGS_KEY  = "pgweb_app_settings";
+
+function loadSettings() {
+  try {
+    var saved = JSON.parse(localStorage.getItem(SETTINGS_KEY) || "{}");
+    if (typeof saved.vimMode === "boolean")          appSettings.vimMode          = saved.vimMode;
+    if (typeof saved.syntaxValidation === "boolean") appSettings.syntaxValidation = saved.syntaxValidation;
+  } catch (e) {}
+}
+
+function persistSetting(key, value) {
+  appSettings[key] = value;
+  localStorage.setItem(SETTINGS_KEY, JSON.stringify(appSettings));
+}
 
 function getFavorites() {
   try { return JSON.parse(localStorage.getItem(FAVORITES_KEY) || "[]"); }
@@ -2891,8 +3143,141 @@ function initShortcutsModal() {
   });
 }
 
-function bindDatabaseObjectsFilter() {
-  var filterTimeout = null;
+// ================================================================
+// FAVORITES PANEL (inline tab view)
+// ================================================================
+
+function renderFavoritesPanel() {
+  var q = ($("#fav-panel-search").val() || "").toLowerCase().trim();
+  var all = getFavorites();
+  var filtered = !q ? all : all.filter(function (f) {
+    return f.name.toLowerCase().indexOf(q) !== -1 ||
+           f.query.toLowerCase().indexOf(q) !== -1;
+  });
+
+  $(".fav-panel-count").text(all.length > 0 ? "(" + all.length + ")" : "");
+  var $list = $("#fav-panel-list");
+  $list.empty();
+
+  if (filtered.length === 0) {
+    var msg = all.length === 0
+      ? "No favorites saved yet.<br>Run a query and click the <i class=\"fa fa-star-o\"></i> button to save it."
+      : "No matches for &ldquo;" + escapeHtml(q) + "&rdquo;";
+    $list.html('<div class="fav-panel-empty">' + msg + '</div>');
+    return;
+  }
+
+  filtered.forEach(function (f) {
+    var preview = f.query.replace(/\s+/g, " ").trim();
+    var display = preview.length > 120 ? preview.slice(0, 120) + "\u2026" : preview;
+    $list.append(
+      '<div class="fav-panel-item" data-id="' + escapeHtml(f.id) + '">' +
+        '<i class="fa fa-star fav-panel-item-icon"></i>' +
+        '<div class="fav-panel-item-body">' +
+          '<div class="fav-panel-item-name">' + escapeHtml(f.name) + '</div>' +
+          '<div class="fav-panel-item-query">' + escapeHtml(display) + '</div>' +
+        '</div>' +
+        '<button class="fav-panel-delete" data-id="' + escapeHtml(f.id) + '" title="Delete favorite">' +
+          '<i class="fa fa-trash-o"></i>' +
+        '</button>' +
+      '</div>'
+    );
+  });
+}
+
+function showFavoritesPanel() {
+  setCurrentTab("table_favorites");
+  $("#input").hide();
+  $("#body").prop("class", "full");
+  renderFavoritesPanel();
+  $("#favorites_panel").show();
+  $("#fav-panel-search").val("").focus();
+}
+
+function initFavoritesPanel() {
+  $("#fav-panel-search").on("input", function () {
+    renderFavoritesPanel();
+  });
+
+  $("#fav-panel-list").on("click", ".fav-panel-item", function (e) {
+    if ($(e.target).closest(".fav-panel-delete").length) return;
+    var id = $(this).data("id");
+    var all = getFavorites();
+    var f = all.filter(function (x) { return x.id === id; })[0];
+    if (!f) return;
+    editor.setValue(f.query);
+    editor.clearSelection();
+    editor.focus();
+    $("#table_query").click();
+  });
+
+  $("#fav-panel-list").on("click", ".fav-panel-delete", function (e) {
+    e.stopPropagation();
+    var id = $(this).data("id");
+    saveFavorites(getFavorites().filter(function (x) { return x.id !== id; }));
+    renderFavoritesPanel();
+  });
+}
+
+// ================================================================
+// SETTINGS MODAL
+// ================================================================
+
+function initSettingsModal() {
+  function openSettings() {
+    // Sync toggles from current settings
+    $("#settings-vim-mode").prop("checked", appSettings.vimMode);
+    $("#settings-syntax-validation").prop("checked", appSettings.syntaxValidation);
+    $("#settings_overlay").show();
+    $("#settings_modal").show();
+  }
+
+  function closeSettings() {
+    $("#settings_overlay").hide();
+    $("#settings_modal").hide();
+  }
+
+  $("#settings_btn").on("click", openSettings);
+  $("#query-tab-settings").on("click", openSettings);
+  $("#settings-close").on("click", closeSettings);
+  $("#settings_overlay").on("click", closeSettings);
+
+  $(document).on("keydown", function (e) {
+    if (e.key === "Escape" && $("#settings_modal").is(":visible")) {
+      closeSettings();
+    }
+  });
+
+  $("#settings-vim-mode").on("change", function () {
+    var enabled = $(this).is(":checked");
+    persistSetting("vimMode", enabled);
+    if (editor) {
+      if (enabled) {
+        editor.setKeyboardHandler("ace/keyboard/vim");
+        $("#vim-mode").addClass("active");
+        $("#norm-mode").removeClass("active");
+      } else {
+        editor.setKeyboardHandler(null);
+        $("#norm-mode").addClass("active");
+        $("#vim-mode").removeClass("active");
+      }
+    }
+    // Keep legacy editorMode key in sync for sidebar / content modal editors
+    localStorage.setItem("editorMode", enabled ? "ace/keyboard/vim" : null);
+  });
+
+  $("#settings-syntax-validation").on("change", function () {
+    var enabled = $(this).is(":checked");
+    persistSetting("syntaxValidation", enabled);
+    if (!enabled) {
+      clearValidationState();
+    } else {
+      scheduleValidation();
+    }
+  });
+}
+
+function bindDatabaseObjectsFilter() {  var filterTimeout = null;
 
   $("#filter_database_objects").on("keyup", function (e) {
     clearTimeout(filterTimeout);
@@ -3408,14 +3793,14 @@ $(document).ready(function () {
   $("#table_constraints").on("click", function () {
     showTableConstraints();
   });
-  $("#table_history").on("click", function () {
-    showQueryHistory();
-  });
   $("#table_query").on("click", function () {
     showQueryPanel();
   });
-  $("#table_connection").on("click", function () {
-    showConnectionPanel();
+  $("#table_history").on("click", function () {
+    showQueryHistory();
+  });
+  $("#table_favorites").on("click", function () {
+    showFavoritesPanel();
   });
   $("#table_activity").on("click", function () {
     showActivityPanel();
@@ -3835,6 +4220,7 @@ $(document).ready(function () {
     });
   });
 
+  loadSettings();
   initEditor();
   initQueryTabs();
   addShortcutTooltips();
@@ -3842,8 +4228,18 @@ $(document).ready(function () {
   initFinder();
   initHistoryFinder();
   initFavoritesFinder();
+  initFavoritesPanel();
+  initSettingsModal();
   initShortcutsModal();
   bindRowSidebar();
+
+  // Apply persisted vim setting to editor (initEditor reads editorMode;
+  // keep appSettings.vimMode in sync)
+  if (appSettings.vimMode && editor) {
+    editor.setKeyboardHandler("ace/keyboard/vim");
+    $("#vim-mode").addClass("active");
+    $("#norm-mode").removeClass("active");
+  }
 
   // Set session from the url
   var reqUrl = new URL(window.location);

@@ -54,6 +54,8 @@ func SetupRoutes(router *gin.Engine) {
 	api.POST("/explain", ExplainQuery)
 	api.GET("/analyze", AnalyzeQuery)
 	api.POST("/analyze", AnalyzeQuery)
+	api.GET("/validate", ValidateQuery)
+	api.POST("/validate", ValidateQuery)
 	api.GET("/history", GetHistory)
 	api.GET("/bookmarks", GetBookmarks)
 	api.GET("/export", DataExport)
