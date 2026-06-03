@@ -8,6 +8,8 @@ var currentObject       = null;
 var autocompleteObjects = [];
 var inputResizing       = false;
 var inputResizeOffset   = null;
+var queryTabs           = [];
+var activeTabId         = null;
 
 var filterOptions = {
   "equal":      "= 'DATA'",
@@ -301,6 +303,10 @@ function unescapeHtml(str){
   return e.childNodes.length === 0 ? "" : e.childNodes[0].nodeValue;
 }
 
+function escapeAttr(str) {
+  return String(str).replace(/&/g, "&amp;").replace(/'/g, "&#39;").replace(/"/g, "&quot;");
+}
+
 function getCurrentObject() {
   return currentObject || { name: "", type: "" };
 }
@@ -452,7 +458,10 @@ function buildTable(results, sortColumn, sortOrder, options) {
   var cols = "";
   var rows = "";
 
-  results.columns.forEach(function(col) {
+  var ctidColIndex = results.columns.indexOf("ctid");
+
+  results.columns.forEach(function(col, idx) {
+    if (idx === ctidColIndex) return; // skip ctid header
     if (col === sortColumn) {
       cols += "<th class='table-header-col active' data-name='" + col + "' data-order=" + sortOrder + ">" + col + "&nbsp;" + sortArrow(sortOrder) + "</th>";
     } else {
@@ -470,10 +479,13 @@ function buildTable(results, sortColumn, sortOrder, options) {
 
   results.rows.forEach(function(row) {
     var r = "";
+    var ctidValue = ctidColIndex >= 0 ? row[ctidColIndex] : null;
 
     // Add all actual row data here
-    for (i in row) {
-      r += "<td data-col='" + i + "'><div>" + escapeHtml(row[i]) + "</div></td>";
+    for (var i = 0; i < row.length; i++) {
+      if (i === ctidColIndex) continue; // skip ctid cell
+      var colName = results.columns[i];
+      r += "<td data-col='" + i + "' data-col-name='" + escapeAttr(colName) + "'><div>" + escapeHtml(row[i]) + "</div></td>";
     }
 
     // Add row action button
@@ -481,7 +493,8 @@ function buildTable(results, sortColumn, sortOrder, options) {
       r += "<td><a class='btn btn-xs btn-" + action.style + " row-action' data-action='" + action.name + "' data-value='" + row[action.dataColumn] + "' href='#'>" + action.title + "</a></td>";
     }
 
-    rows += "<tr>" + r + "</tr>";
+    var ctidAttr = ctidValue ? " data-ctid='" + escapeAttr(String(ctidValue)) + "'" : "";
+    rows += "<tr" + ctidAttr + ">" + r + "</tr>";
   });
 
   $("#results_header").html(cols);
@@ -1041,6 +1054,134 @@ var objectAutocompleter = {
   }
 }
 
+function saveQueryTabs() {
+  localStorage.setItem("pgweb_query_tabs", JSON.stringify(queryTabs));
+  localStorage.setItem("pgweb_active_tab", activeTabId);
+}
+
+function getActiveTab() {
+  return queryTabs.find(function(t) { return t.id === activeTabId; });
+}
+
+function renderQueryTabs() {
+  var $container = $("#query-tabs");
+  $container.empty();
+  queryTabs.forEach(function(tab) {
+    var safeName = $("<span>").text(tab.name).html();
+    var $tab = $('<div class="query-tab" data-tab-id="' + tab.id + '">' +
+      '<span class="tab-name">' + safeName + '</span>' +
+      (queryTabs.length > 1 ? '<span class="tab-close" title="Close tab">&times;</span>' : '') +
+      '</div>');
+    if (tab.id === activeTabId) $tab.addClass("active");
+    $container.append($tab);
+  });
+}
+
+function addQueryTab() {
+  if (activeTabId && editor) {
+    var cur = getActiveTab();
+    if (cur) cur.query = editor.getValue();
+  }
+  var id = "tab_" + Date.now();
+  queryTabs.push({ id: id, name: "Query " + (queryTabs.length + 1), query: "" });
+  activeTabId = id;
+  saveQueryTabs();
+  renderQueryTabs();
+  if (editor) {
+    editor.setValue("");
+    editor.clearSelection();
+    editor.focus();
+  }
+}
+
+function switchQueryTab(id) {
+  if (id === activeTabId) return;
+  if (activeTabId && editor) {
+    var cur = getActiveTab();
+    if (cur) cur.query = editor.getValue();
+  }
+  activeTabId = id;
+  saveQueryTabs();
+  renderQueryTabs();
+  var tab = queryTabs.find(function(t) { return t.id === id; });
+  if (tab && editor) {
+    editor.setValue(tab.query || "");
+    editor.clearSelection();
+    editor.focus();
+  }
+}
+
+function closeQueryTab(id) {
+  if (queryTabs.length <= 1) return;
+  var idx = queryTabs.findIndex(function(t) { return t.id === id; });
+  queryTabs.splice(idx, 1);
+  if (activeTabId === id) {
+    var newIdx = Math.min(idx, queryTabs.length - 1);
+    activeTabId = queryTabs[newIdx].id;
+    if (editor) {
+      editor.setValue(queryTabs[newIdx].query || "");
+      editor.clearSelection();
+    }
+  }
+  saveQueryTabs();
+  renderQueryTabs();
+}
+
+function initQueryTabs() {
+  var stored = localStorage.getItem("pgweb_query_tabs");
+  var storedActive = localStorage.getItem("pgweb_active_tab");
+
+  if (stored) {
+    try { queryTabs = JSON.parse(stored); } catch(e) { queryTabs = []; }
+  }
+
+  if (!queryTabs || queryTabs.length === 0) {
+    var oldQuery = localStorage.getItem("pgweb_query") || "";
+    queryTabs = [{ id: "tab_1", name: "Query 1", query: oldQuery }];
+    storedActive = "tab_1";
+  }
+
+  activeTabId = (storedActive && queryTabs.find(function(t) { return t.id === storedActive; }))
+    ? storedActive
+    : queryTabs[0].id;
+
+  renderQueryTabs();
+
+  var activeTab = getActiveTab();
+  if (activeTab && editor) {
+    editor.setValue(activeTab.query || "");
+    editor.clearSelection();
+  }
+
+  $("#query-tabs").on("click", ".query-tab", function(e) {
+    if ($(e.target).hasClass("tab-close")) return;
+    switchQueryTab($(this).data("tab-id"));
+  });
+
+  $("#query-tabs").on("click", ".tab-close", function(e) {
+    e.stopPropagation();
+    closeQueryTab($(this).closest(".query-tab").data("tab-id"));
+  });
+
+  $("#query-tabs").on("dblclick", ".tab-name", function(e) {
+    e.stopPropagation();
+    var $tab = $(this).closest(".query-tab");
+    var id = $tab.data("tab-id");
+    var tab = queryTabs.find(function(t) { return t.id === id; });
+    if (!tab) return;
+    var newName = prompt("Tab name:", tab.name);
+    if (newName && newName.trim()) {
+      tab.name = newName.trim();
+      saveQueryTabs();
+      renderQueryTabs();
+    }
+  });
+
+  $("#add-query-tab").on("click", function() {
+    addQueryTab();
+  });
+}
+
 function initEditor() {
   var writeQueryTimeout = null;
   var lastSelectedMode = localStorage.getItem("editorMode") || null;
@@ -1086,15 +1227,13 @@ function initEditor() {
     }
 
     writeQueryTimeout = setTimeout(function() {
-      localStorage.setItem("pgweb_query", editor.getValue());
+      var cur = getActiveTab();
+      if (cur) {
+        cur.query = editor.getValue();
+        saveQueryTabs();
+      }
     }, 1000);
   });
-
-  var query = localStorage.getItem("pgweb_query");
-  if (query && query.length > 0) {
-    editor.setValue(query);
-    editor.clearSelection();
-  }
 
   if (lastSelectedMode == "ace/keyboard/vim") {
     $("#vim-mode").addClass("active");
@@ -1532,10 +1671,21 @@ function onInputResize(event) {
 
 function bindContentModalEvents() {
   var contentModal = document.getElementById("content_modal");
+  var currentCell = null; // {table, colName, ctid}
+
+  function resetModalToViewMode() {
+    $("#content_modal pre.content").show();
+    $("#content_modal textarea.content-edit").hide();
+    $(".content-modal-action[data-action='copy']").show();
+    $(".content-modal-action[data-action='edit']").show();
+    $(".content-modal-save").hide();
+    $(".content-modal-cancel").hide();
+  }
 
   $(window).on("click", function(e) {
     // Automatically hide the modal on any click outside of the modal window
     if (e.target && !contentModal.contains(e.target)) {
+      resetModalToViewMode();
       $("#content_modal").hide();
     }
   });
@@ -1546,16 +1696,59 @@ function bindContentModalEvents() {
         copyToClipboard($("#content_modal pre").text());
         break;
       case "close":
+        resetModalToViewMode();
         $("#content_modal").hide();
+        break;
+      case "edit":
+        var currentText = $("#content_modal pre.content").text();
+        $("#content_modal textarea.content-edit").val(currentText).show().focus();
+        $("#content_modal pre.content").hide();
+        $(".content-modal-action[data-action='copy']").hide();
+        $(".content-modal-action[data-action='edit']").hide();
+        $(".content-modal-save").show();
+        $(".content-modal-cancel").show();
         break;
     }
   });
 
+  $(".content-modal-cancel").on("click", function() {
+    resetModalToViewMode();
+  });
+
+  $(".content-modal-save").on("click", function() {
+    if (!currentCell) return;
+    var newValue = $("#content_modal textarea.content-edit").val();
+    apiCall("post", "/tables/" + currentCell.table + "/cell", {
+      column:  currentCell.colName,
+      ctid:    currentCell.ctid,
+      value:   newValue
+    }, function(data) {
+      if (data && data.error) {
+        alert("Error: " + data.error);
+        return;
+      }
+      resetModalToViewMode();
+      $("#content_modal").hide();
+      showPaginatedTableContent();
+    });
+  });
+
   $("#results").on("dblclick", "td > div", function() {
+    var td = $(this).closest("td");
+    var tr = $(this).closest("tr");
+    var mode = $("#results").data("mode");
+    var ctid = tr.data("ctid");
+    var colName = td.data("col-name");
+    var table = $("#results").data("table");
+
     var value = unescapeHtml($(this).html());
     if (!value) return;
 
+    currentCell = (mode === "browse" && ctid && table) ? { table: table, colName: colName, ctid: ctid } : null;
+
+    resetModalToViewMode();
     $("#content_modal pre").html(value);
+    $(".content-modal-action[data-action='edit']").toggle(!!currentCell);
     $("#content_modal").show();
   })
 }
@@ -1935,6 +2128,7 @@ $(document).ready(function() {
   });
 
   initEditor();
+  initQueryTabs();
   addShortcutTooltips();
   bindDatabaseObjectsFilter();
 

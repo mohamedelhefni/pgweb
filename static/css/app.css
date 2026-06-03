@@ -1183,6 +1183,38 @@ a:hover {
   margin: 0;
 }
 
+#content_modal textarea.content-edit {
+  resize: none;
+  width: 100%;
+  outline: none;
+  border: none;
+  border-top: 1px solid var(--border);
+}
+
+#content_modal .content-modal-save,
+#content_modal .content-modal-cancel {
+  height: 24px;
+  padding: 0 8px;
+  font-size: 11px;
+  font-family: var(--font-sans, sans-serif);
+  border-radius: 3px;
+  border: 1px solid var(--border);
+  cursor: pointer;
+  background: var(--bg-elevated);
+  color: var(--text);
+  transition: border-color 120ms ease-out, color 120ms ease-out;
+}
+
+#content_modal .content-modal-save:hover {
+  border-color: var(--color-green, #3fb950);
+  color: var(--color-green, #3fb950);
+}
+
+#content_modal .content-modal-cancel:hover {
+  border-color: var(--text-muted);
+  color: var(--text);
+}
+
 /* ================================================================
    CONNECTION WINDOW
    ================================================================ */

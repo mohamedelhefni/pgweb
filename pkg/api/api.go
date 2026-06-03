@@ -451,6 +451,27 @@ func GetTableRows(c *gin.Context) {
 	serveResult(c, res, err)
 }
 
+// UpdateTableCell updates a single cell value identified by ctid
+func UpdateTableCell(c *gin.Context) {
+	column := strings.TrimSpace(c.Request.FormValue("column"))
+	ctid := strings.TrimSpace(c.Request.FormValue("ctid"))
+	value := c.Request.FormValue("value")
+	setNull := c.Request.FormValue("set_null") == "true"
+
+	if column == "" || ctid == "" {
+		badRequest(c, fmt.Errorf("column and ctid are required"))
+		return
+	}
+
+	err := DB(c).UpdateTableCell(c.Params.ByName("table"), column, ctid, value, setNull)
+	if err != nil {
+		badRequest(c, err)
+		return
+	}
+
+	successResponse(c, gin.H{"success": true})
+}
+
 // GetTableInfo renders a selected table information
 func GetTableInfo(c *gin.Context) {
 	res, err := DB(c).TableInfo(c.Params.ByName("table"))

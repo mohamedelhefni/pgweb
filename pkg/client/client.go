@@ -291,7 +291,7 @@ func (client *Client) Function(id string) (*Result, error) {
 
 func (client *Client) TableRows(table string, opts RowsOptions) (*Result, error) {
 	schema, table := getSchemaAndTable(table)
-	sql := fmt.Sprintf(`SELECT * FROM "%s"."%s"`, schema, table)
+	sql := fmt.Sprintf(`SELECT *, ctid FROM "%s"."%s"`, schema, table)
 
 	if opts.Where != "" {
 		sql += fmt.Sprintf(" WHERE %s", opts.Where)
@@ -314,6 +314,20 @@ func (client *Client) TableRows(table string, opts RowsOptions) (*Result, error)
 	}
 
 	return client.query(sql)
+}
+
+// UpdateTableCell updates a single cell value identified by ctid.
+func (client *Client) UpdateTableCell(table, column, ctid, value string, setNull bool) error {
+	schema, table := getSchemaAndTable(table)
+	var err error
+	if setNull {
+		sql := fmt.Sprintf(`UPDATE "%s"."%s" SET "%s" = NULL WHERE ctid = $1`, schema, table, column)
+		_, err = client.db.Exec(sql, ctid)
+	} else {
+		sql := fmt.Sprintf(`UPDATE "%s"."%s" SET "%s" = $1 WHERE ctid = $2`, schema, table, column)
+		_, err = client.db.Exec(sql, value, ctid)
+	}
+	return err
 }
 
 func (client *Client) EstimatedTableRowsCount(table string, opts RowsOptions) (*Result, error) {
