@@ -5,14 +5,17 @@
   <meta charset="utf-8">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta http-equiv="Content-Language" content="en">
-  <link rel="stylesheet" href="static/css/bootstrap.css"></link>
-  <link rel="stylesheet" href="static/css/font-awesome.css"></link>
-  <link rel="stylesheet" href="static/css/app.css"></link>
+  <script>(function(){var t=localStorage.getItem('pgweb_theme')||'dark';document.documentElement.setAttribute('data-theme',t)})()</script>
+  <link rel="stylesheet" href="static/css/bootstrap.css">
+  <link rel="stylesheet" href="static/css/font-awesome.css">
+  <link rel="stylesheet" href="static/css/app.css">
   <link rel="icon" type="image/x-icon" href="static/img/icon.ico" />
   <script type="text/javascript" src="static/js/jquery.js"></script>
   <script type="text/javascript" src="static/js/ace.js"></script>
   <script type="text/javascript" src="static/js/ace-pgsql.js"></script>
   <script type="text/javascript" src="static/js/ext-language_tools.js"></script>
+  <script type="text/javascript" src="static/js/theme-tomorrow.js"></script>
+  <script type="text/javascript" src="static/js/theme-tomorrow-night.js"></script>
   <script type="text/javascript" src="static/js/bootstrap-contextmenu.js"></script>
   <script type="text/javascript" src="static/js/bootstrap-dropdown.js"></script>
   <script type="text/javascript" src="static/js/utils.js"></script>
@@ -34,9 +37,14 @@
         <li id="table_connection">Connection</li>
       </ul>
 
-      <div class="connection-actions">
-        <a href="#" id="edit_connection" class="btn btn-default btn-sm"><i class="fa fa-database"></i> Connect</a>
-        <a href="#" id="close_connection" class="btn btn-default btn-sm">Disconnect</a>
+      <div class="nav-right">
+        <button id="theme_toggle" class="btn-icon" title="Toggle light/dark theme" aria-label="Toggle theme">
+          <i class="fa fa-sun-o"></i>
+        </button>
+        <div class="connection-actions">
+          <a href="#" id="edit_connection" class="btn btn-default btn-sm"><i class="fa fa-database"></i> Connect</a>
+          <a href="#" id="close_connection" class="btn btn-default btn-sm">Disconnect</a>
+        </div>
       </div>
     </div>
     <div id="sidebar">
@@ -348,5 +356,44 @@
     </ul>
   </div>
   <div id="error_banner"></div>
+
+  <script>
+    (function() {
+      var DARK_THEME  = 'ace/theme/tomorrow_night';
+      var LIGHT_THEME = 'ace/theme/tomorrow';
+
+      function applyAceTheme(theme) {
+        if (window.editor) {
+          window.editor.setTheme(theme);
+        }
+      }
+
+      function applyTheme(theme) {
+        document.documentElement.setAttribute('data-theme', theme);
+        localStorage.setItem('pgweb_theme', theme);
+        var icon = document.querySelector('#theme_toggle .fa');
+        if (icon) {
+          icon.className = theme === 'dark' ? 'fa fa-sun-o' : 'fa fa-moon-o';
+        }
+        applyAceTheme(theme === 'dark' ? DARK_THEME : LIGHT_THEME);
+      }
+
+      // Set correct icon on load
+      $(document).ready(function() {
+        var current = document.documentElement.getAttribute('data-theme') || 'dark';
+        var icon = document.querySelector('#theme_toggle .fa');
+        if (icon) {
+          icon.className = current === 'dark' ? 'fa fa-sun-o' : 'fa fa-moon-o';
+        }
+        // Apply correct Ace theme after editor is initialized
+        applyAceTheme(current === 'dark' ? DARK_THEME : LIGHT_THEME);
+      });
+
+      document.getElementById('theme_toggle').addEventListener('click', function() {
+        var current = document.documentElement.getAttribute('data-theme') || 'dark';
+        applyTheme(current === 'dark' ? 'light' : 'dark');
+      });
+    })();
+  </script>
 </body>
 </html>
