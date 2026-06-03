@@ -552,6 +552,13 @@ a:hover {
   transition: background 80ms ease-out, color 80ms ease-out;
 }
 
+.schema .schema-container .schema-group ul li.schema-item-expandable {
+  display: block;
+  height: auto;
+  padding: 0;
+  overflow: visible;
+}
+
 .schema .schema-container .schema-group ul li i {
   color: var(--text-muted);
   margin-right: 5px;
@@ -559,25 +566,140 @@ a:hover {
   flex-shrink: 0;
 }
 
-.schema .schema-container .schema-group ul li.active {
+.schema .schema-container .schema-group ul li.active:not(.schema-item-expandable) {
   background: var(--accent-dim);
   color: var(--text);
   font-weight: 500;
 }
 
-[data-theme="light"] .schema .schema-container .schema-group ul li.active {
+[data-theme="light"] .schema .schema-container .schema-group ul li.active:not(.schema-item-expandable) {
   background: var(--accent-dim);
   color: var(--accent);
 }
 
-.schema .schema-container .schema-group ul li:hover {
+.schema .schema-container .schema-group ul li:not(.schema-item-expandable):hover {
   background: var(--bg-row-hover);
   color: var(--text);
 }
 
 .schema .schema-container .schema-group.expanded .fa-chevron-down  { display: inline-block; }
 .schema .schema-container .schema-group.expanded .fa-chevron-right { display: none; }
-.schema .schema-container .schema-group.expanded ul                { display: block; }
+.schema .schema-container .schema-group.expanded ul:not(.schema-item-columns) { display: block; }
+
+/* Per-item collapse toggle */
+.schema-item-row {
+  display: flex;
+  align-items: center;
+  height: 28px;
+  width: 100%;
+  padding: 0 9px 0 4px;
+  cursor: pointer;
+  color: var(--text-2);
+  font-size: 12px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: background 80ms ease-out, color 80ms ease-out;
+}
+
+.schema-item-row:hover {
+  background: var(--bg-row-hover);
+  color: var(--text);
+}
+
+.schema-item.active > .schema-item-row {
+  background: var(--accent-dim);
+  color: var(--text);
+  font-weight: 500;
+}
+
+[data-theme="light"] .schema-item.active > .schema-item-row {
+  background: var(--accent-dim);
+  color: var(--accent);
+}
+
+.schema-item {
+  display: block !important;
+  height: auto !important;
+  padding: 0 !important;
+}
+
+.schema-item-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 28px;
+  flex-shrink: 0;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: color 100ms ease-out;
+}
+
+.schema-item-toggle:hover {
+  color: var(--text-2);
+}
+
+.schema-item-toggle .fa-chevron-right {
+  display: inline-block !important;
+  font-size: 8px !important;
+  transition: transform 150ms ease-out;
+}
+
+.schema-item.expanded > .schema-item-row > .schema-item-toggle .fa-chevron-right {
+  transform: rotate(90deg);
+}
+
+.schema-item-columns {
+  display: none;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.schema .schema-container .schema-group ul li.schema-item.expanded > .schema-item-columns {
+  display: block;
+}
+
+.schema-col-item,
+.schema-col-loading,
+.schema-col-empty {
+  display: flex;
+  align-items: center;
+  height: 22px;
+  padding: 0 9px 0 36px;
+  font-size: 11px;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: default;
+  pointer-events: none;
+}
+
+.schema-col-item i {
+  font-size: 7px;
+  margin-right: 5px;
+  flex-shrink: 0;
+  color: var(--text-muted);
+  opacity: 0.6;
+}
+
+.schema-col-name {
+  color: var(--text-2);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  margin-right: 5px;
+  flex-shrink: 0;
+}
+
+.schema-col-type {
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 
 /* ================================================================
    SCROLLBAR
