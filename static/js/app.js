@@ -424,6 +424,7 @@ function loadSchemas() {
       }
 
       bindContextMenus();
+      renderPinnedSection();
       restoreActiveObject();
     });
   });
@@ -451,6 +452,11 @@ function restoreActiveObject() {
       obj.name +
       "'][data-type='" +
       obj.type +
+      "'], " +
+      ".pinned-list li.schema-item[data-id='" +
+      obj.name +
+      "'][data-type='" +
+      obj.type +
       "']",
   );
   if (!sidebarItem.length) {
@@ -459,9 +465,11 @@ function restoreActiveObject() {
   }
 
   currentObject = obj;
-  sidebarItem.closest(".schema").addClass("expanded");
-  sidebarItem.closest(".schema-group").addClass("expanded");
-  $("#objects li").removeClass("active");
+  var $schema = sidebarItem.closest(".schema");
+  if ($schema.length) $schema.addClass("expanded");
+  var $group = sidebarItem.closest(".schema-group");
+  if ($group.length) $group.addClass("expanded");
+  $("#objects li, .pinned-list li").removeClass("active");
   sidebarItem.addClass("active");
 
   if (currentObject.type == "function") {
@@ -2897,11 +2905,16 @@ function initFinder() {
 
     currentObject = { name: obj.id, type: obj.type };
 
-    var sidebarItem = $("#objects li.schema-item[data-id='" + obj.id + "']");
+    var sidebarItem = $(
+      "#objects li.schema-item[data-id='" +
+        obj.id +
+        "'], .pinned-list li.schema-item[data-id='" +
+        obj.id +
+        "']",
+    );
     if (sidebarItem.length) {
-      $("#objects li").removeClass("active");
+      $("#objects li, .pinned-list li").removeClass("active");
       sidebarItem.addClass("active");
-      // Expand parent schema and group if collapsed
       sidebarItem.closest(".schema").addClass("expanded");
       sidebarItem.closest(".schema-group").addClass("expanded");
     }
@@ -3156,6 +3169,89 @@ function initHistoryFinder() {
 
 var FAVORITES_KEY = "pgport_favorite_queries";
 var SETTINGS_KEY = "pgport_app_settings";
+var PINNED_KEY = "pgport_pinned_objects";
+
+function getPinned() {
+  try {
+    return JSON.parse(localStorage.getItem(PINNED_KEY) || "[]");
+  } catch (e) {
+    return [];
+  }
+}
+
+function setPinned(list) {
+  localStorage.setItem(PINNED_KEY, JSON.stringify(list));
+}
+
+function isPinned(id) {
+  return getPinned().some(function (p) {
+    return p.id === id;
+  });
+}
+
+function togglePin(id, name, type, schema) {
+  var list = getPinned();
+  var idx = -1;
+  for (var i = 0; i < list.length; i++) {
+    if (list[i].id === id) {
+      idx = i;
+      break;
+    }
+  }
+  if (idx >= 0) {
+    list.splice(idx, 1);
+  } else {
+    list.push({ id: id, name: name, type: type, schema: schema });
+  }
+  setPinned(list);
+  return idx < 0;
+}
+
+function renderPinnedSection() {
+  var $section = $(".pinned-section");
+  var $list = $section.find(".pinned-list");
+  $list.empty();
+
+  var pinned = getPinned();
+  if (pinned.length === 0) {
+    $section.hide();
+    return;
+  }
+
+  var knownIds = {};
+  $("#objects li.schema-item").each(function () {
+    knownIds[$(this).data("id")] = true;
+  });
+
+  pinned.forEach(function (p) {
+    var missing = !knownIds[p.id];
+    var $li = $("<li></li>")
+      .addClass("schema-item schema-" + p.type)
+      .attr("data-type", p.type)
+      .attr("data-id", p.id)
+      .attr("data-name", p.name);
+    if (missing) $li.addClass("pinned-missing");
+
+    var $name = $("<span class='pinned-name'></span>").text(p.name);
+    var $unpin = $(
+      "<span class='pinned-unpin' title='Unpin'><i class='fa fa-times'></i></span>",
+    );
+    $unpin.on("click", function (e) {
+      e.stopPropagation();
+      togglePin(p.id, p.name, p.type, p.schema);
+      renderPinnedSection();
+    });
+
+    $li.append(
+      "<i class='fa fa-table'></i>&nbsp;",
+    );
+    $li.append($name);
+    $li.append($unpin);
+    $list.append($li);
+  });
+
+  $section.show();
+}
 
 function loadSettings() {
   try {
@@ -3643,7 +3739,7 @@ function bindDatabaseObjectsFilter() {
 
 function resetObjectsFilter() {
   $("#filter_database_objects").val("");
-  $("#objects li.schema-item, #objects .schema-group").removeClass(
+  $("#objects li.schema-item, #objects .schema-group, .pinned-list li.schema-item").removeClass(
     "filter-hidden",
   );
   $(".clear-objects-filter").hide();
@@ -3653,16 +3749,18 @@ function resetObjectsFilter() {
 function filterObjectsByName(query) {
   var lowerQuery = query.toLowerCase();
 
-  $("#objects li.schema-item").each(function (idx, el) {
-    var item = $(el);
-    var name = String($(el).data("name") || "").toLowerCase();
+  $("#objects li.schema-item, .pinned-list li.schema-item").each(
+    function (idx, el) {
+      var item = $(el);
+      var name = String($(el).data("name") || "").toLowerCase();
 
-    if (name.indexOf(lowerQuery) < 0) {
-      item.addClass("filter-hidden");
-    } else {
-      item.removeClass("filter-hidden");
-    }
-  });
+      if (name.indexOf(lowerQuery) < 0) {
+        item.addClass("filter-hidden");
+      } else {
+        item.removeClass("filter-hidden");
+      }
+    },
+  );
 
   // Hide schema-group headers when all their items are filtered out
   $("#objects .schema-group").each(function (idx, el) {
@@ -3698,10 +3796,12 @@ function bindContextMenus() {
       $(el).contextmenu({
         target: "#tables_context_menu",
         scopes: "li.schema-table",
+        before: updatePinMenuLabel,
         onItem: function (context, e) {
           var el = $(e.target);
-          var table = getQuotedSchemaTableName($(context[0]).data("id"));
           var action = el.data("action");
+          if (handlePinAction(context, action)) return;
+          var table = getQuotedSchemaTableName($(context[0]).data("id"));
           performTableAction(table, action, el);
         },
       });
@@ -3711,10 +3811,12 @@ function bindContextMenus() {
       $(el).contextmenu({
         target: "#view_context_menu",
         scopes: "li.schema-view",
+        before: updatePinMenuLabel,
         onItem: function (context, e) {
           var el = $(e.target);
-          var table = getQuotedSchemaTableName($(context[0]).data("id"));
           var action = el.data("action");
+          if (handlePinAction(context, action)) return;
+          var table = getQuotedSchemaTableName($(context[0]).data("id"));
           performViewAction(table, action, el);
         },
       });
@@ -3724,15 +3826,74 @@ function bindContextMenus() {
       $(el).contextmenu({
         target: "#view_context_menu",
         scopes: "li.schema-materialized_view",
+        before: updatePinMenuLabel,
         onItem: function (context, e) {
           var el = $(e.target);
-          var table = getQuotedSchemaTableName($(context[0]).data("id"));
           var action = el.data("action");
+          if (handlePinAction(context, action)) return;
+          var table = getQuotedSchemaTableName($(context[0]).data("id"));
           performViewAction(table, action, el);
         },
       });
     }
   });
+
+  $(".pinned-list").each(function (id, el) {
+    var $list = $(el);
+    if ($list.data("context-bound")) return;
+    $list.data("context-bound", true);
+
+    $list.contextmenu({
+      target: "#tables_context_menu",
+      scopes: "li.schema-table",
+      before: updatePinMenuLabel,
+      onItem: function (context, e) {
+        var $el = $(e.target);
+        var action = $el.data("action");
+        if (handlePinAction(context, action)) return;
+        var table = getQuotedSchemaTableName($(context[0]).data("id"));
+        performTableAction(table, action, $el);
+      },
+    });
+
+    $list.contextmenu({
+      target: "#view_context_menu",
+      scopes: "li.schema-view, li.schema-materialized_view",
+      before: updatePinMenuLabel,
+      onItem: function (context, e) {
+        var $el = $(e.target);
+        var action = $el.data("action");
+        if (handlePinAction(context, action)) return;
+        var table = getQuotedSchemaTableName($(context[0]).data("id"));
+        performViewAction(table, action, $el);
+      },
+    });
+  });
+}
+
+function updatePinMenuLabel(e, $target) {
+  var $menu = $(this.$element.data("target"));
+  if (!$menu.length) return;
+  var $link = $menu.find("a.pin-action");
+  if (!$link.length) return;
+  var id = $target.data("id");
+  var name = $target.data("name") || "";
+  $link.text(isPinned(id) ? "Unpin from sidebar" : "Pin to sidebar");
+}
+
+function handlePinAction(context, action) {
+  if (action !== "pin") return false;
+  var $el = $(context[0]);
+  var id = $el.data("id");
+  var name = $el.data("name") || "";
+  var type = $el.data("type");
+  var schema = "";
+  if (typeof id === "string" && id.indexOf(".") > -1) {
+    schema = id.substring(0, id.lastIndexOf("."));
+  }
+  togglePin(id, name, type, schema);
+  renderPinnedSection();
+  return true;
 }
 
 function toggleDatabaseSearch() {
@@ -4181,6 +4342,43 @@ $(document).ready(function () {
     openRowSidebar(this);
   });
 
+  function selectObjectLi($li) {
+    currentObject = {
+      name: $li.data("id"),
+      type: $li.data("type"),
+    };
+
+    sessionStorage.setItem("current_object", JSON.stringify(currentObject));
+
+    $("#objects li, .pinned-list li").removeClass("active");
+    $li.addClass("active");
+    $(".current-page").data("page", 1);
+    $(".filters select, .filters input").val("");
+
+    if (currentObject.type == "function") {
+      sessionStorage.setItem("tab", "table_structure");
+    } else {
+      showTableInfo();
+    }
+
+    switch (sessionStorage.getItem("tab")) {
+      case "table_content":
+        showTableContent();
+        break;
+      case "table_structure":
+        showTableStructure();
+        break;
+      case "table_constraints":
+        showTableConstraints();
+        break;
+      case "table_indexes":
+        showTableIndexes();
+        break;
+      default:
+        showTableContent();
+    }
+  }
+
   $("#objects").on("click", ".schema-group-title", function (e) {
     $(this).parent().toggleClass("expanded");
   });
@@ -4230,47 +4428,22 @@ $(document).ready(function () {
 
   $("#objects").on("click", "li", function (e) {
     if ($(e.target).closest(".schema-item-toggle").length) return;
+    if ($(e.target).closest(".pinned-unpin").length) return;
     if (
       $(this).hasClass("schema-col-item") ||
       $(this).hasClass("schema-col-loading") ||
       $(this).hasClass("schema-col-empty")
     )
       return;
+    if ($(this).hasClass("pinned-missing")) return;
 
-    currentObject = {
-      name: $(this).data("id"),
-      type: $(this).data("type"),
-    };
+    selectObjectLi($(this));
+  });
 
-    sessionStorage.setItem("current_object", JSON.stringify(currentObject));
-
-    $("#objects li").removeClass("active");
-    $(this).addClass("active");
-    $(".current-page").data("page", 1);
-    $(".filters select, .filters input").val("");
-
-    if (currentObject.type == "function") {
-      sessionStorage.setItem("tab", "table_structure");
-    } else {
-      showTableInfo();
-    }
-
-    switch (sessionStorage.getItem("tab")) {
-      case "table_content":
-        showTableContent();
-        break;
-      case "table_structure":
-        showTableStructure();
-        break;
-      case "table_constraints":
-        showTableConstraints();
-        break;
-      case "table_indexes":
-        showTableIndexes();
-        break;
-      default:
-        showTableContent();
-    }
+  $(".pinned-list").on("click", "li", function (e) {
+    if ($(e.target).closest(".pinned-unpin").length) return;
+    if ($(this).hasClass("pinned-missing")) return;
+    selectObjectLi($(this));
   });
 
   $("#results").on("click", "a.row-action", function (e) {
