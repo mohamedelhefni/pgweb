@@ -424,8 +424,68 @@ function loadSchemas() {
       }
 
       bindContextMenus();
+      restoreActiveObject();
     });
   });
+}
+
+function restoreActiveObject() {
+  var saved = sessionStorage.getItem("current_object");
+  if (!saved) return;
+
+  var obj;
+  try {
+    obj = JSON.parse(saved);
+  } catch (e) {
+    sessionStorage.removeItem("current_object");
+    return;
+  }
+
+  if (!obj || !obj.name || !obj.type) {
+    sessionStorage.removeItem("current_object");
+    return;
+  }
+
+  var sidebarItem = $(
+    "#objects li.schema-item[data-id='" +
+      obj.name +
+      "'][data-type='" +
+      obj.type +
+      "']",
+  );
+  if (!sidebarItem.length) {
+    sessionStorage.removeItem("current_object");
+    return;
+  }
+
+  currentObject = obj;
+  sidebarItem.closest(".schema").addClass("expanded");
+  sidebarItem.closest(".schema-group").addClass("expanded");
+  $("#objects li").removeClass("active");
+  sidebarItem.addClass("active");
+
+  if (currentObject.type == "function") {
+    sessionStorage.setItem("tab", "table_structure");
+  } else {
+    showTableInfo();
+  }
+
+  switch (sessionStorage.getItem("tab")) {
+    case "table_content":
+      showTableContent();
+      break;
+    case "table_structure":
+      showTableStructure();
+      break;
+    case "table_constraints":
+      showTableConstraints();
+      break;
+    case "table_indexes":
+      showTableIndexes();
+      break;
+    default:
+      showTableContent();
+  }
 }
 
 function escapeHtml(str) {
@@ -4181,6 +4241,8 @@ $(document).ready(function () {
       name: $(this).data("id"),
       type: $(this).data("type"),
     };
+
+    sessionStorage.setItem("current_object", JSON.stringify(currentObject));
 
     $("#objects li").removeClass("active");
     $(this).addClass("active");
