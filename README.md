@@ -1,6 +1,6 @@
 # pgport
 
-<img src="docs/img/icon.png" alt="pgport" width="48" align="left" style="margin-right: 12px" />
+<img src="docs/img/icon.png" alt="pgport" />
 
 A fork of [pgweb](https://github.com/sosedoff/pgweb) — the lightweight self-hosted PostgreSQL web client — extended with keyboard-first navigation, inline editing, row details sidebar, tabbed queries, vim mode, and more. Thirteen additions, zero new dependencies.
 
@@ -13,7 +13,8 @@ A fork of [pgweb](https://github.com/sosedoff/pgweb) — the lightweight self-ho
 - **Command Palette** (`Cmd/Ctrl+P`) — fuzzy-search across all tables, views, and functions simultaneously. Arrow keys to navigate, Enter to open, Escape to dismiss. No mouse required.
 - **Inline Cell Editing** — double-click any cell in browse mode to edit it. Uses PostgreSQL `ctid` for safe row identity; works on any table, primary key or not.
 - **Row Details Sidebar** — click any row to open a persistent detail panel. JSON values render formatted, timestamps stay readable, booleans and nulls display clearly. Non-modal: stays open while you browse other rows.
-- **Favorites** — star any table to pin it to the top of the connection sidebar for one-click access.
+- **Pin Tables** — pin any table to the top of the connection sidebar for one-click access.
+- **Favorite Queries** — save the current editor contents as a named query, then browse and re-run them with `Ctrl+Shift+F`.
 - **Dark/Light Theme Toggle** — built with CSS custom properties throughout. Instant switch, no flicker, persisted in `localStorage`.
 - **Vim Keybinding Mode** — full vim bindings in the SQL editor via Ace, persisted in `localStorage`.
 
@@ -25,7 +26,7 @@ A fork of [pgweb](https://github.com/sosedoff/pgweb) — the lightweight self-ho
 - **Add New Row** — form-based interface for inserting rows into any table without writing SQL.
 - **Ace Editor Content View** — content modal uses Ace with syntax highlighting, SQL formatter, and live validation.
 - **SQL Autocomplete** — table and column name completions in the query editor; updates when you switch connections.
-- **Connection Sidebar** — persistent sidebar for switching between open connections; favorites appear at the top.
+- **Connection Sidebar** — persistent sidebar for switching between open connections; pinned tables appear at the top.
 - **History & Shortcuts** — fuzzy-search full query history (`Ctrl+H`); open keyboard shortcuts reference (`?`).
 
 ### Docker image size

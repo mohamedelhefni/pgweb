@@ -1339,7 +1339,7 @@
         <div class="section-intro" id="features">
             <div class="section-label">What's new in pgport</div>
             <h2 class="section-heading">
-                Thirteen additions. Zero new dependencies.
+                Fourteen additions. Zero new dependencies.
             </h2>
             <p class="section-desc">
                 Every feature was built to stay out of the way: keyboard-native,
@@ -1593,17 +1593,17 @@
             </div>
         </div>
 
-        <!-- FEATURE 4: ROW DETAILS SIDEBAR + FAVORITES -->
+        <!-- FEATURE 4: ROW DETAILS SIDEBAR + PINNED TABLES -->
         <div class="feature-row flip">
             <div>
                 <div class="feat-tag">Data Exploration</div>
-                <h3 class="feat-title">Row Details. Favorites.</h3>
+                <h3 class="feat-title">Row Details. Pinned Tables.</h3>
                 <p class="feat-body">
                     Click any row to open a persistent detail panel on the
                     right. Each field gets its own labeled slot — JSON values
                     render formatted, timestamps stay readable, booleans show
-                    clearly. Star any table to pin it to your Favorites list for
-                    one-click access.
+                    clearly. Pin any table to surface it at the top of the
+                    connection sidebar for one-click access.
                 </p>
                 <div class="detail-list">
                     <div class="detail-item">
@@ -1615,8 +1615,8 @@
                         timestamp, null
                     </div>
                     <div class="detail-item">
-                        Favorites pinned above the table list in the connection
-                        sidebar
+                        Pinned tables float above the table list in the
+                        connection sidebar
                     </div>
                 </div>
             </div>
@@ -1715,7 +1715,7 @@
         <div class="minor-section">
             <div class="minor-intro">
                 <div class="section-label">Also included</div>
-                <h2 class="section-heading">Eight more additions</h2>
+                <h2 class="section-heading">Nine more additions</h2>
             </div>
             <div class="minor-grid">
                 <div class="minor-item">
@@ -1771,8 +1771,28 @@
                     <div class="minor-name">Connection Sidebar</div>
                     <div class="minor-desc">
                         A persistent sidebar for switching between open
-                        connections. Favorites appear at the top for instant
-                        access.
+                        connections. Pinned tables appear at the top for
+                        instant access.
+                    </div>
+                </div>
+                <div class="minor-item">
+                    <div class="minor-glyph">★ query</div>
+                    <div class="minor-name">Favorite Queries</div>
+                    <div class="minor-desc">
+                        Save the current editor contents as a named query, then
+                        browse and re-run them from a fuzzy-search palette.
+                        Open with
+                        <code
+                            style="
+                                font-family: monospace;
+                                font-size: 0.75em;
+                                color: var(--accent);
+                                background: var(--accent-dim);
+                                padding: 0.05em 0.3em;
+                                border-radius: 3px;
+                            "
+                            >Ctrl+Shift+F</code
+                        >.
                     </div>
                 </div>
                 <div class="minor-item">
@@ -1910,7 +1930,16 @@
                             </td>
                         </tr>
                         <tr>
-                            <td class="col-feat">Favorites</td>
+                            <td class="col-feat">Pin tables</td>
+                            <td class="col-pgport">
+                                <span class="cmp-no">✗</span>
+                            </td>
+                            <td class="col-port">
+                                <span class="cmp-yes">✓</span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="col-feat">Favorite queries</td>
                             <td class="col-pgport">
                                 <span class="cmp-no">✗</span>
                             </td>
